@@ -39,7 +39,7 @@ In CI: [`packages/core/action/example-workflow.yml`](packages/core/action/exampl
 |---|---|
 | **No evidence is never a pass** | Missing evidence is *Not checked*, and a required item that is Not checked keeps the change Not done. |
 | **Old evidence never approves new code** | Results are bound to the exact commit. A report from older code is *Outdated*. |
-| **Rules a change cannot loosen** | The policy is read from the branch you merge into, not from the change. |
+| **Rules a change cannot loosen** | The policy is read from the branch you merge into, not from the change. An edit to it counts only once an approver the policy names signs off on that exact edit ([how](docs/FORMATS.md#changing-the-policy-done-policy-approval-v1)). |
 | **Exceptions stay honest** | A named approver accepts a risk until a date, and the record still shows what the evidence said. |
 | **Trusted CI evidence** | Receipts signed by your CI key count where the policy requires it; local results are labeled self-reported. |
 | **Local and keyless** | It reads files and git. It never runs your code, and nothing leaves your machine. |

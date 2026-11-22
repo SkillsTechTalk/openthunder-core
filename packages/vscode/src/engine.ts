@@ -6,6 +6,7 @@ import { execFileSync } from 'child_process';
 import {
   evaluate, parsePolicy, importJUnit, importLcov, importSarif, compareOpenApi, parseSpec, buildReceipt, readReceipts,
   currentRevision, changedFiles, changedLines, fileAtRef, repositoryIdentity, policyAtBase, DEFAULT_POLICY_YAML,
+  readApprovals, sha256, policyTextHash, APPROVALS_DIR,
   type Decision, type EvidenceReceipt, type EvidenceFinding, type ImportedEvidence,
 } from 'openthunder-core';
 
@@ -131,7 +132,11 @@ export function gather(o: GatherOptions): Gathered {
 
   const decision = evaluate({
     policy: parsePolicy(adopted ? trustedText! : DEFAULT_POLICY_YAML),
-    integrity: { source: adopted ? `${policyPath} on ${base}` : 'the OpenThunder default (not adopted by this repository)', editedByChange: policyEditedLocally },
+    integrity: {
+      source: adopted ? `${policyPath} on ${base}` : 'the OpenThunder default (not adopted by this repository)', editedByChange: policyEditedLocally,
+      // An approver's signed approval of this exact edit (done-core approve-policy), checked against the base policy.
+      ...(policyEditedLocally ? { basePolicyHash: sha256(trustedText!), changedPolicyHash: policyTextHash(working), approvals: readApprovals(path.join(root, APPROVALS_DIR)).approvals } : {}),
+    },
     receipts, subject: { repository, revision, changedFiles: changed }, now: o.now ?? new Date().toISOString(),
   });
   return { decision, base, adopted, policyEditedLocally, coverageGaps, findings, apiBreaks, reports };

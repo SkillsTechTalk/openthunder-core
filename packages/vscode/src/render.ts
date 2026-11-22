@@ -56,7 +56,7 @@ export function panelHtml(s: PanelState, nonce: string, cspSource: string): stri
     <div class="actions"><button data-cmd="refresh" title="Check again">⟳</button><button data-cmd="copyPrSummary" title="Copy for the pull request">⧉ Copy</button></div>
   </header>
   ${!s.adopted ? `<div class="notice">This repository has no Definition of Done yet, so this is the OpenThunder default, for information. <button class="link" data-cmd="init">Create one</button></div>` : ''}
-  ${s.policyEditedLocally ? `<div class="notice">You are editing the policy. This change is still judged by the base branch's copy; your edit applies once it is reviewed and merged.</div>` : ''}
+  ${s.policyEditedLocally ? `<div class="notice">You are editing the policy. This change is still judged by the base branch's copy; your edit applies once it is merged. An approver can sign off on it with <code>done-core approve-policy</code>.</div>` : ''}
   ${open.length ? `<h2>What still keeps this change from Done</h2><ul>${open.map(row).join('')}</ul>` : ''}
   ${met.length ? `<h2>Required, met</h2><ul>${met.map(row).join('')}</ul>` : ''}
   ${rec.length ? `<details><summary>Recommended (${rec.length})</summary><ul>${rec.map(row).join('')}</ul></details>` : ''}

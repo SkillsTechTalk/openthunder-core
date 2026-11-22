@@ -82,6 +82,9 @@ export function verifyReceipt(r: EvidenceReceipt, keys: TrustedKey[]): ReceiptVe
   try { ok = crypto.verify(null, Buffer.from(signingPayload(r)), crypto.createPublicKey(key.publicKey), Buffer.from(r.signature.value, 'base64')); }
   catch { ok = false; }
   if (!ok) return { trust: 'invalid', reason: `the signature does not match the receipt (changed after signing, or the wrong key)` };
+  if (key.approver && !key.identities?.length) {
+    return { trust: 'invalid', reason: `key "${key.id}" is ${key.approver}'s approval key; it signs policy approvals, not evidence` };
+  }
   if (key.identities?.length && !key.identities.includes(r.execution.identity)) {
     return { trust: 'invalid', reason: `key "${key.id}" may not vouch for ${r.execution.identity}` };
   }

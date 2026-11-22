@@ -60,6 +60,30 @@ export interface TrustedKey {
   publicKey: string;
   /** Execution identities this key may vouch for (e.g. "github-actions:acme/app"). Absent = any. */
   identities?: string[];
+  /**
+   * The approver (a name in the policy's "approvers") whose key this is. Only such a key can sign a policy approval.
+   * An approver's key without "identities" signs approvals only, never evidence.
+   */
+  approver?: string;
+}
+
+/**
+ * A signed approval of one edit to the policy file, by an approver the BASE policy names. It is bound to the exact
+ * text before and after (sha256 of the file bytes), not to a commit: later code commits keep it valid; any further
+ * edit to the policy, or a moved base policy, makes it Outdated. Committed into the change under
+ * .openthunder/approvals/ (a signature cannot be forged, so it is safe to carry in the change it approves).
+ */
+export interface PolicyApproval {
+  schema: 'done-policy-approval-v1';
+  repository: string;
+  policyPath: string;
+  basePolicyHash: string;
+  newPolicyHash: string;
+  approver: string;
+  /** ISO 8601, UTC. */
+  approvedAt: string;
+  reason?: string;
+  signature?: { keyId: string; alg: 'ed25519'; value: string };
 }
 
 export type RequirementType = 'tests' | 'coverage' | 'security' | 'check';
@@ -134,6 +158,12 @@ export interface PolicyIntegrity {
   editedByChange: boolean;
   /** The caller enforces policy integrity itself (for example an admin approval of policy edits), so no item is added. */
   enforcedElsewhere?: boolean;
+  /** sha256 of the base branch's policy file bytes (needed to check approvals of an edit). */
+  basePolicyHash?: string;
+  /** sha256 of this change's policy file bytes ("absent" when the change deletes it). */
+  changedPolicyHash?: string;
+  /** Approvals carried by the change (read from .openthunder/approvals/). Checked against the BASE policy's keys. */
+  approvals?: PolicyApproval[];
 }
 
 export type ItemStatus = 'passed' | 'failed' | 'not-checked' | 'outdated' | 'not-applicable' | 'exception';

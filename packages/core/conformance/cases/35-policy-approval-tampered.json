@@ -1,0 +1,28 @@
+{
+  "name": "An approval changed after signing never counts",
+  "policy": "version: 1\ntrust: any\nkeys:\n  - id: jordan\n    public-key: |\n{{key:jordan}}\n    approver: \"Jordan\"\napprovers: [\"Jordan\"]\nrequire: []\n",
+  "policyEditedByChange": true,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      ".openthunder/done.yml",
+      ".openthunder/approvals/x.json"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "approvals": [
+    {
+      "sign": "jordan",
+      "approver": "Jordan",
+      "tamper": true
+    }
+  ],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "policy-intact": "not-checked"
+    }
+  }
+}

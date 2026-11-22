@@ -11,7 +11,12 @@ keys:
       -----BEGIN PUBLIC KEY-----
       ...
     identities: ["github-actions:acme/app"]
-approvers: ["Jordan (tech lead)"]   # who may approve an exception
+  - id: jordan                       # an approver's key: signs approvals of policy edits, never evidence
+    public-key: |
+      -----BEGIN PUBLIC KEY-----
+      ...
+    approver: "Jordan (tech lead)"
+approvers: ["Jordan (tech lead)"]   # who may approve an exception or an edit to this policy
 require:
   - tests
   - coverage: { min: 80, of: changed }     # thresholds are examples: choose your own
@@ -34,6 +39,28 @@ read when `done.yml` is absent.)
   Not checked, and says how to produce them.
 - An exception may name a requirement by its id (`coverage`, `check:perf-budget`) or a check by its check id
   (`openthunder.impacted-tests`).
+
+## Changing the policy (`done-policy-approval-v1`)
+
+A change that edits `.openthunder/done.yml` is still judged by the base branch's copy, so it cannot loosen its own
+rules. Its item "The policy that judges this change is unchanged by it" stays Not checked until either the edit is
+merged on its own, or an approver signs off on it:
+
+```bash
+done-core keygen --out ~/.done-keys        # once; the approver keeps the private key, the public key goes in "keys"
+done-core approve-policy --base main --key ~/.done-keys/done-core-private.pem --key-id jordan --reason "raise the bar"
+git add .openthunder/approvals && git commit -m "Approve the Definition of Done edit"
+```
+
+The approval (`.openthunder/approvals/<hash>.json`) records the repository, the policy path, sha256 of the policy
+text before and after, the approver, the time, an optional reason, and an Ed25519 signature. It counts only when the
+key is listed in the base policy with `approver:`, that name is in the base policy's `approvers`, and the signature
+matches. It is bound to the edit, not to a commit: later code commits keep it; another edit to the policy, or a
+changed base policy, makes the item Outdated until it is approved again. An approver's key without `identities`
+cannot sign evidence receipts.
+
+What it does not do: Core cannot tell whether the approver also wrote the change. If that matters, require a
+reviewer other than the author in your code host as well.
 
 ## Evidence receipt (`done-evidence-v1`)
 

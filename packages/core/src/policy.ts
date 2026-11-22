@@ -10,7 +10,11 @@
 //         -----BEGIN PUBLIC KEY-----
 //         ...
 //       identities: ["github-actions:acme/app"]
-//   approvers: ["Jordan (tech lead)"]
+//     - id: jordan                 # an approver's key: signs approvals of policy edits (done-core approve-policy)
+//       public-key: |
+//         ...
+//       approver: "Jordan (tech lead)"
+//   approvers: ["Jordan (tech lead)"]  # who may approve an exception or an edit to this policy
 //   require:
 //     - tests
 //     - coverage: { min: 80, of: changed }
@@ -28,7 +32,7 @@ import type { ParsedPolicy, Policy, PolicyException, Requirement, RequirementTyp
 export const DEFAULT_POLICY_YAML = `# Definition of Done (done-core). Thresholds are examples: set your own.
 version: 1
 trust: any            # "ci" = only receipts signed by your CI's key count
-approvers: []         # who may approve an exception; empty = none can
+approvers: []         # who may approve an exception or a policy edit; empty = none can
 require:
   - tests             # the tests ran and passed for this exact revision
   - security          # no scanner finding at error level on the changed files
@@ -107,7 +111,8 @@ function parseKeys(raw: unknown, errors: string[]): TrustedKey[] {
     const pk = typeof o['public-key'] === 'string' ? o['public-key'] : typeof o.publicKey === 'string' ? o.publicKey : '';
     if (!id || !/BEGIN PUBLIC KEY/.test(pk)) { errors.push(`A trusted key needs an id and a PEM public key${id ? ` ("${id}")` : ''}.`); continue; }
     const ids = strList(o.identities);
-    out.push({ id, publicKey: pk, ...(ids ? { identities: ids } : {}) });
+    const approver = typeof o.approver === 'string' && o.approver.trim() ? o.approver.trim() : undefined;
+    out.push({ id, publicKey: pk, ...(ids ? { identities: ids } : {}), ...(approver ? { approver } : {}) });
   }
   return out;
 }
@@ -156,6 +161,9 @@ export function parsePolicy(text: string): ParsedPolicy {
     version: 1, trust: trust === 'ci' ? 'ci' : 'any', keys: parseKeys(o.keys, errors), approvers: strList(o.approvers) ?? [],
     requirements: [...byId.values()], exceptions: parseExceptions(o.exceptions, errors),
   };
+  for (const k of policy.keys) {
+    if (k.approver && !policy.approvers.includes(k.approver)) notes.push(`Key "${k.id}" names ${k.approver} as its approver, who is not in "approvers", so it cannot approve a policy change.`);
+  }
   if (policy.trust === 'ci' && !policy.keys.length) errors.push('trust is "ci" but no trusted keys are listed, so no evidence can count.');
   return { policy, errors, notes };
 }

@@ -3,8 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { evaluate } from '../src/evaluate';
 import { parsePolicy } from '../src/policy';
-import { generateKeyPair, signReceipt } from '../src/receipt';
-import type { EvidenceReceipt } from '../src/types';
+import { generateKeyPair, sha256, signReceipt } from '../src/receipt';
+import { signApproval } from '../src/approval';
+import type { EvidenceReceipt, PolicyApproval } from '../src/types';
 
 // Runs every conformance case in conformance/cases (the reference behavior other implementations can run too).
 const DIR = path.join(__dirname, '..', 'conformance', 'cases');
@@ -29,16 +30,35 @@ function expandReceipt(r: any, subject: any): EvidenceReceipt {
   return out;
 }
 
+// An approval of the case's policy edit. "edit": "earlier" approves a different edit; "base": "other" a different base.
+function expandApproval(a: any, c: any, baseHash: string, newHash: string): PolicyApproval {
+  let out: PolicyApproval = {
+    schema: 'done-policy-approval-v1', repository: a.repository ?? c.subject.repository, policyPath: '.openthunder/done.yml',
+    basePolicyHash: a.base === 'other' ? sha256('version: 1\n') : baseHash,
+    newPolicyHash: a.edit === 'earlier' ? sha256('an earlier edit') : newHash,
+    approver: a.approver, approvedAt: a.approvedAt ?? '2026-11-20T10:00:00Z', ...(a.reason ? { reason: a.reason } : {}),
+  };
+  if (a.sign) out = signApproval(out, key(a.sign).privateKey, a.sign);
+  if (a.tamper) out = { ...out, newPolicyHash: sha256('a looser policy') };
+  return out;
+}
+
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
 
 describe('Definition of Done conformance', () => {
-  it('has the cases', () => { expect(files.length).toBeGreaterThanOrEqual(29); });
+  it('has the cases', () => { expect(files.length).toBeGreaterThanOrEqual(36); });
   for (const f of files) {
     const c = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
     it(`${f}: ${c.name}`, () => {
+      const baseText = expandPolicy(c.policy);
+      const baseHash = sha256(baseText);
+      const newHash = sha256(c.changedPolicy !== undefined ? expandPolicy(c.changedPolicy) : `${baseText}# edited\n`);
       const d = evaluate({
-        policy: parsePolicy(expandPolicy(c.policy)),
-        integrity: { source: 'done-core.yml on main', editedByChange: !!c.policyEditedByChange },
+        policy: parsePolicy(baseText),
+        integrity: {
+          source: 'done-core.yml on main', editedByChange: !!c.policyEditedByChange,
+          ...(c.approvals ? { basePolicyHash: baseHash, changedPolicyHash: newHash, approvals: c.approvals.map((a: any) => expandApproval(a, c, baseHash, newHash)) } : {}),
+        },
         receipts: c.receipts.map((r: any) => expandReceipt(r, c.subject)),
         subject: c.subject, now: c.now,
       });
@@ -46,6 +66,7 @@ describe('Definition of Done conformance', () => {
       for (const [id, status] of Object.entries(c.expect.items)) expect(`${id}=${got[id]}`).toBe(`${id}=${status}`);
       for (const [id, status] of Object.entries(c.expect.underlying ?? {})) expect(d.items.find((i) => i.id === id)?.underlying).toBe(status);
       for (const [id, title] of Object.entries(c.expect.title ?? {})) expect(d.items.find((i) => i.id === id)?.title).toBe(title);
+      for (const [id, text] of Object.entries(c.expect.evidenceIncludes ?? {})) expect(d.items.find((i) => i.id === id)?.evidence).toContain(text);
       for (const [id, next] of Object.entries(c.expect.next ?? {})) expect(d.items.find((i) => i.id === id)?.next).toBe(next);
       expect(d.state).toBe(c.expect.state);
       // Universal invariants, on every case:

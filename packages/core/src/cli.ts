@@ -5,7 +5,9 @@
 //   done-core collect --format junit|lcov|sarif --report <file> [--base <ref>]
 //   done-core openapi --spec <path> --base <ref>     compare the API description on base vs this change
 //   done-core evaluate --base <ref> [--now <iso>] [--json]
-//   done-core keygen --out <dir>                     an Ed25519 key pair for a CI collector
+//   done-core keygen --out <dir>                     an Ed25519 key pair for a CI collector or an approver
+//   done-core approve-policy --base <ref> --key <private.pem> --key-id <id> [--reason <text>]
+//                                                    an approver signs off on this change's edit to the policy
 //   done-core ci [--base <ref>] [--junit a,b] [--lcov f] [--sarif a,b] [--openapi spec] [--mode report|enforce]
 //                                                    collect + evaluate in CI; writes the GitHub step summary and outputs
 //
@@ -19,9 +21,11 @@ import { compareOpenApi, parseSpec } from './openapi';
 import { DEFAULT_POLICY_YAML, parsePolicy } from './policy';
 import { evaluate, renderDecision } from './evaluate';
 import { decisionMarkdown } from './markdown';
-import { generateKeyPair } from './receipt';
+import { generateKeyPair, sha256 } from './receipt';
+import { APPROVALS_DIR, approvalFileName, policyTextHash, signApproval, verifyApproval } from './approval';
+import type { PolicyIntegrity } from './types';
 import {
-  buildReceipt, writeReceipt, readReceipts, repositoryIdentity, currentRevision, changedFiles, changedLines, fileAtRef, executionFromEnv, policyAtBase, POLICY_FILE,
+  buildReceipt, writeReceipt, readReceipts, readApprovals, repositoryIdentity, currentRevision, changedFiles, changedLines, fileAtRef, executionFromEnv, policyAtBase, POLICY_FILE,
 } from './collect';
 
 export { POLICY_FILE, LEGACY_POLICY_FILE } from './collect';
@@ -42,6 +46,20 @@ function args(argv: string[]): { cmd: string; flags: Record<string, string | tru
 
 function str(f: Record<string, string | true>, k: string): string | undefined {
   return typeof f[k] === 'string' ? (f[k] as string) : undefined;
+}
+
+/** Where the policy came from, whether this change edits it, and the approvals the change carries. */
+function integrityFor(cwd: string, base: string, policyPath: string, trustedText: string): { integrity: PolicyIntegrity; unreadable: string[] } {
+  let working: string | null = null;
+  try { working = fs.readFileSync(path.join(cwd, policyPath), 'utf8'); } catch { working = null; }
+  const editedByChange = working !== trustedText;
+  const integrity: PolicyIntegrity = { source: `${policyPath} on ${base}`, editedByChange };
+  if (!editedByChange) return { integrity, unreadable: [] };
+  const { approvals, unreadable } = readApprovals(path.join(cwd, APPROVALS_DIR));
+  return {
+    integrity: { ...integrity, basePolicyHash: sha256(trustedText), changedPolicyHash: policyTextHash(working), approvals },
+    unreadable,
+  };
 }
 
 function signing(env: NodeJS.ProcessEnv) {
@@ -68,7 +86,7 @@ export function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'done-core-private.pem'), kp.privateKey, { mode: 0o600 });
       fs.writeFileSync(path.join(dir, 'done-core-public.pem'), kp.publicKey);
-      out(`Wrote ${path.join(dir, 'done-core-private.pem')} (store it as a CI secret, DONE_CORE_SIGNING_KEY) and the public key below (add it to "keys" in the policy):\n${kp.publicKey}`);
+      out(`Wrote ${path.join(dir, 'done-core-private.pem')} (for CI: store it as the secret DONE_CORE_SIGNING_KEY; for an approver: keep it yourself, never commit it) and the public key below (add it to "keys" in the policy; an approver's key also gets "approver:"):\n${kp.publicKey}`);
       return 0;
     }
     if (cmd === 'collect' || cmd === 'openapi') {
@@ -148,14 +166,14 @@ export function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv
         out(msg);
         return mode === 'enforce' ? 1 : 0;
       }
-      let working: string | null = null;
-      try { working = fs.readFileSync(path.join(cwd, policyPath), 'utf8'); } catch { working = null; }
+      const { integrity, unreadable: badApprovals } = integrityFor(cwd, base, policyPath, trustedText);
       const decision = evaluate({
         policy: parsePolicy(trustedText),
-        integrity: { source: `${policyPath} on ${base}`, editedByChange: working !== trustedText },
+        integrity,
         receipts, subject: { repository, revision, changedFiles: changedFiles(cwd, base) },
         now: str(flags, 'now') ?? new Date().toISOString(),
       });
+      for (const u of badApprovals) decision.notes.push(`Approval file ${u} could not be read and was ignored.`);
       for (const m of missing) decision.notes.push(`A report named in the workflow was not found: ${m}. Its requirement stays Not checked.`);
       if (!sign) decision.notes.push('No signing key was configured (DONE_CORE_SIGNING_KEY), so this run\'s receipts are self-reported.');
       const open = decision.items.filter((i) => i.required && ['failed', 'not-checked', 'outdated'].includes(i.status)).length;
@@ -165,28 +183,61 @@ export function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv
       if (mode === 'report' && decision.state === 'not-done') out('\n(report mode: this does not fail the job; set mode: enforce to make it required.)');
       return mode === 'enforce' && decision.state === 'not-done' ? 1 : 0;
     }
+    if (cmd === 'approve-policy') {
+      const base = str(flags, 'base');
+      const keyFile = str(flags, 'key');
+      const keyId = str(flags, 'key-id');
+      if (!base || !keyFile || !keyId) { err('approve-policy needs --base <ref>, --key <your private key file>, and --key-id <your key\'s id in the base policy>.'); return 2; }
+      const { policyPath, trustedText } = policyAtBase(cwd, base, str(flags, 'policy-path'));
+      if (trustedText === null) { err(`No ${policyPath} on ${base}, so there is no approver list to approve with.`); return 2; }
+      let working: string | null = null;
+      try { working = fs.readFileSync(path.join(cwd, policyPath), 'utf8'); } catch { working = null; }
+      if (working === trustedText) { err(`This change does not edit ${policyPath}, so there is nothing to approve.`); return 1; }
+      const basePolicy = parsePolicy(trustedText).policy;
+      const key = basePolicy.keys.find((k) => k.id === keyId);
+      if (!key) { err(`The policy on ${base} lists no key "${keyId}". An approver's key is added to "keys" (with "approver:") on ${base} first.`); return 1; }
+      if (!key.approver) { err(`Key "${keyId}" on ${base} has no "approver:", so it cannot approve a policy edit.`); return 1; }
+      if (!basePolicy.approvers.includes(key.approver)) { err(`${key.approver} is not in "approvers" on ${base}, so their key cannot approve a policy edit.`); return 1; }
+      const repository = str(flags, 'repository') ?? repositoryIdentity(cwd);
+      const reason = str(flags, 'reason');
+      const unsigned = {
+        schema: 'done-policy-approval-v1' as const, repository, policyPath,
+        basePolicyHash: sha256(trustedText), newPolicyHash: policyTextHash(working),
+        approver: key.approver, approvedAt: str(flags, 'now') ?? new Date().toISOString(), ...(reason ? { reason } : {}),
+      };
+      const approval = signApproval(unsigned, fs.readFileSync(path.resolve(cwd, keyFile), 'utf8'), keyId);
+      const check = verifyApproval(approval, basePolicy, { repository, basePolicyHash: unsigned.basePolicyHash, changedPolicyHash: unsigned.newPolicyHash });
+      if (check.status !== 'valid') { err(`The approval would not count, so it was not written: ${check.reason}. (Is ${keyFile} the private key for "${keyId}"?)`); return 1; }
+      const dir = path.join(cwd, APPROVALS_DIR);
+      fs.mkdirSync(dir, { recursive: true });
+      const file = path.join(dir, approvalFileName(approval));
+      fs.writeFileSync(file, JSON.stringify(approval, null, 2) + '\n');
+      out(`${key.approver} approved this edit to ${policyPath} (judged against ${base}).`);
+      out(`Wrote ${path.relative(cwd, file)}. Commit it with the change. It stays valid for later code commits; any further edit to the policy needs a new approval.`);
+      return 0;
+    }
     if (cmd === 'evaluate') {
       const base = str(flags, 'base');
       if (!base) { err('evaluate needs --base <ref> (the branch the change will merge into; its policy judges the change).'); return 2; }
       const { policyPath, trustedText } = policyAtBase(cwd, base, str(flags, 'policy-path'));
       if (trustedText === null) { err(`No ${policyPath} on ${base}. Run \`done-core init\`, commit it to ${base}, then evaluate.`); return 2; }
-      let working: string | null = null;
-      try { working = fs.readFileSync(path.join(cwd, policyPath), 'utf8'); } catch { working = null; }
+      const { integrity, unreadable: badApprovals } = integrityFor(cwd, base, policyPath, trustedText);
       const { revision } = currentRevision(cwd);
       const now = str(flags, 'now') ?? new Date().toISOString();
       const { receipts, unreadable } = readReceipts(path.join(cwd, str(flags, 'receipts') ?? RECEIPTS_DIR));
       const decision = evaluate({
         policy: parsePolicy(trustedText),
-        integrity: { source: `${policyPath} on ${base}`, editedByChange: working !== trustedText },
+        integrity,
         receipts,
         subject: { repository: str(flags, 'repository') ?? repositoryIdentity(cwd), revision, changedFiles: changedFiles(cwd, base) },
         now,
       });
       for (const u of unreadable) decision.notes.push(`Receipt file ${u} could not be read and was ignored.`);
+      for (const u of badApprovals) decision.notes.push(`Approval file ${u} could not be read and was ignored.`);
       out(flags.json ? JSON.stringify(decision, null, 2) : renderDecision(decision));
       return decision.state === 'not-done' ? 1 : 0;
     }
-    out('done-core: init | ci [--base <ref>] [--junit a,b] [--lcov f] [--sarif a,b] [--openapi spec] [--mode report|enforce] | collect --format junit|lcov|sarif --report <file> [--base <ref>] | openapi --spec <path> --base <ref> | evaluate --base <ref> [--now <iso>] [--json] | keygen --out <dir>');
+    out('done-core: init | ci [--base <ref>] [--junit a,b] [--lcov f] [--sarif a,b] [--openapi spec] [--mode report|enforce] | collect --format junit|lcov|sarif --report <file> [--base <ref>] | openapi --spec <path> --base <ref> | evaluate --base <ref> [--now <iso>] [--json] | keygen --out <dir> | approve-policy --base <ref> --key <private.pem> --key-id <id> [--reason <text>]');
     return cmd === 'help' ? 0 : 2;
   } catch (e) {
     err(`done-core could not finish, so nothing was decided: ${e instanceof Error ? e.message : String(e)}`);

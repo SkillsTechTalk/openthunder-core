@@ -8,10 +8,12 @@
 //     receipt never counts anywhere.
 //   - An exception needs an approver the policy names, a scope that covers the change, and an expiry not passed.
 //     It keeps the underlying result: an exception is never Passed.
-//   - A change that edits the policy is judged by the trusted policy, and stays Not done until approved elsewhere.
+//   - A change that edits the policy is judged by the trusted policy, and stays Not done until an approver the
+//     trusted policy names signs off on that exact edit (approval.ts), or the edit is merged on its own.
 //   - A requirement this evaluator cannot check stays open; a policy with errors is itself an open item.
 import { policyHash } from './policy';
 import { verifyReceipt } from './receipt';
+import { verifyApproval, type ApprovalVerdict } from './approval';
 import type {
   Decision, DecisionState, EvidenceReceipt, ItemResult, ItemStatus, ParsedPolicy, PolicyException, PolicyIntegrity,
   ReceiptTrust, Requirement, Subject,
@@ -142,6 +144,46 @@ function exceptionFor(req: Requirement, input: EvaluateInput, today: string, not
   return undefined;
 }
 
+const INTACT_TITLE = 'The policy that judges this change is unchanged by it';
+const INTACT_WHY = 'A change cannot loosen the rules that decide it.';
+
+/** The policy-intact item: passed when the change leaves the policy alone, or when an approver signed off on this exact edit. */
+function policyIntactItem(input: EvaluateInput, policy: ParsedPolicy['policy']): ItemResult {
+  const { integrity } = input;
+  const base = { id: POLICY_INTACT, title: INTACT_TITLE, required: true, why: INTACT_WHY };
+  if (!integrity.editedByChange) return { ...base, status: 'passed', evidence: `Judged by ${integrity.source}.` };
+  const judged = `This change edits the policy. It was judged by ${integrity.source}`;
+  const howTo = 'An approver named in the base policy runs `done-core approve-policy` on this change and commits the approval it writes (or the policy edit is approved and merged on its own).';
+  const approvals = integrity.approvals ?? [];
+  if (!approvals.length) {
+    return { ...base, status: 'not-checked', evidence: `${judged}; the edit applies only after it is approved and merged. No approval of this edit was found.`, next: howTo };
+  }
+  if (!integrity.basePolicyHash || !integrity.changedPolicyHash) {
+    return { ...base, status: 'not-checked', evidence: `${judged}. Approvals were found, but the policy text before and after was not provided, so they could not be checked.`, next: howTo };
+  }
+  const edit = { repository: input.subject.repository, basePolicyHash: integrity.basePolicyHash, changedPolicyHash: integrity.changedPolicyHash };
+  const verdicts = approvals.map((a) => verifyApproval(a, policy, edit));
+  const valid = verdicts.find((v): v is Extract<ApprovalVerdict, { status: 'valid' }> => v.status === 'valid');
+  if (valid) {
+    const a = valid.approval;
+    return {
+      ...base, status: 'passed',
+      evidence: `${judged}. ${a.approver} approved this exact edit (signed by key "${valid.keyId}", ${a.approvedAt.slice(0, 10)}${a.reason ? `: ${a.reason}` : ''}). The edited policy applies after this change is merged.`,
+      basis: `signed approval by "${valid.keyId}"`,
+    };
+  }
+  const stale = verdicts.find((v): v is Extract<ApprovalVerdict, { status: 'stale' }> => v.status === 'stale');
+  if (stale) {
+    return {
+      ...base, status: 'outdated',
+      evidence: `${judged}. ${stale.approval.approver} approved an earlier version of this edit, but ${stale.reason}.`,
+      next: 'Ask an approver to approve the current edit (`done-core approve-policy`) and commit the new approval.',
+    };
+  }
+  const reasons = verdicts.map((v) => (v.status === 'invalid' ? v.reason : '')).filter(Boolean);
+  return { ...base, status: 'not-checked', evidence: `${judged}. No approval counts: ${reasons.join('; ')}.`, next: howTo };
+}
+
 /** Pure: decide a change. */
 export function evaluate(input: EvaluateInput): Decision {
   if (Number.isNaN(Date.parse(input.now))) throw new Error('evaluate: "now" must be an ISO date (it decides exception expiry).');
@@ -150,9 +192,7 @@ export function evaluate(input: EvaluateInput): Decision {
   const notes = [...input.policy.notes];
   const items: ItemResult[] = [];
 
-  if (!input.integrity.enforcedElsewhere) items.push(input.integrity.editedByChange
-    ? { id: POLICY_INTACT, title: 'The policy that judges this change is unchanged by it', required: true, status: 'not-checked', why: 'A change cannot loosen the rules that decide it.', evidence: `This change edits the policy. It was judged by ${input.integrity.source}; the edit applies only after it is approved and merged.`, next: 'Have the policy change approved outside this change (for example by a code owner of the policy file), then merge it on its own.' }
-    : { id: POLICY_INTACT, title: 'The policy that judges this change is unchanged by it', required: true, status: 'passed', why: 'A change cannot loosen the rules that decide it.', evidence: `Judged by ${input.integrity.source}.` });
+  if (!input.integrity.enforcedElsewhere) items.push(policyIntactItem(input, policy));
   if (input.policy.errors.length) {
     items.push({ id: POLICY_READABLE, title: 'The policy can be read', required: true, status: 'not-checked', why: 'A policy with problems cannot say what the team requires.', evidence: input.policy.errors.join(' '), next: 'Fix the policy on the base branch.' });
   }

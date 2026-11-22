@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { normalizeRepository, sha256, signReceipt } from './receipt';
 import type { ImportedEvidence, ChangedLines } from './importers';
-import type { EvidenceReceipt } from './types';
+import type { EvidenceReceipt, PolicyApproval } from './types';
 
 export const PRODUCER = { name: 'done-core', version: '0.1.0' };
 
@@ -52,6 +52,18 @@ export function readReceipts(dir: string): { receipts: EvidenceReceipt[]; unread
     try { receipts.push(JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'))); } catch { unreadable.push(n); }
   }
   return { receipts, unreadable };
+}
+
+/** Policy approvals carried by the change (.openthunder/approvals/*.json). Unreadable files are reported, not trusted. */
+export function readApprovals(dir: string): { approvals: PolicyApproval[]; unreadable: string[] } {
+  const approvals: PolicyApproval[] = [];
+  const unreadable: string[] = [];
+  let names: string[] = [];
+  try { names = fs.readdirSync(dir).filter((n) => n.endsWith('.json')).sort(); } catch { return { approvals, unreadable }; }
+  for (const n of names) {
+    try { approvals.push(JSON.parse(fs.readFileSync(path.join(dir, n), 'utf8'))); } catch { unreadable.push(n); }
+  }
+  return { approvals, unreadable };
 }
 
 // ── git ──────────────────────────────────────────────────────────────────────────────────────────
