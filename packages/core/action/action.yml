@@ -45,6 +45,17 @@ outputs:
 runs:
   using: composite
   steps:
+    # Used straight from the repository (uses: SkillsTechTalk/openthunder-core/packages/core/action@<sha>), the CLI is
+    # not built yet: build it once from the same checkout. Nothing is fetched beyond the locked npm dependencies.
+    - shell: bash
+      env:
+        CORE_DIR: ${{ github.action_path }}/..
+      run: |
+        if [ ! -f "$CORE_DIR/dist/cli.js" ]; then
+          root="$(cd "$CORE_DIR/../.." && pwd)"
+          echo "Building OpenThunder Core from $(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo 'this checkout')..."
+          (cd "$root" && npm ci --no-audit --no-fund --ignore-scripts --loglevel=error && npm run build --workspace packages/core --silent)
+        fi
     - id: done
       shell: bash
       env:

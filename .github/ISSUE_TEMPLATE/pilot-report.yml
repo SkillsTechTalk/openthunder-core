@@ -1,0 +1,47 @@
+name: Pilot report
+description: You tried OpenThunder Core on real pull requests. Tell us what it showed and whether you kept it.
+title: "Pilot report: "
+labels: ["pilot"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying it. This issue is public: share item names and statuses only, never code, report
+        contents, or secrets. Security problems go through SECURITY.md instead.
+  - type: dropdown
+    id: gap
+    attributes:
+      label: Did it show a gap you had not noticed?
+      options:
+        - "Yes: missing evidence (Not checked)"
+        - "Yes: evidence for older code (Outdated)"
+        - "Yes: untrusted or self-reported evidence"
+        - "Yes: something else (below)"
+        - "No"
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Which items, what status, and whether that was right. A pasted run-summary excerpt is fine if it holds nothing private.
+    validations: { required: true }
+  - type: textarea
+    id: wrong
+    attributes:
+      label: Was anything wrong or confusing?
+  - type: dropdown
+    id: kept
+    attributes:
+      label: Is it still turned on a week later?
+      options: ["Yes, report mode", "Yes, enforce mode", "No", "Too early to say"]
+    validations: { required: true }
+  - type: textarea
+    id: why
+    attributes:
+      label: Why, or why not?
+  - type: input
+    id: setup
+    attributes:
+      label: Your setup
+      description: Language and test runner, reports used (JUnit, lcov, SARIF, OpenAPI), and the Core commit you pinned.
+      placeholder: "TypeScript, Vitest, JUnit + lcov, core @ 1a2b3c4"

@@ -31,7 +31,7 @@ done-core evaluate --base main
 ```
 
 No repo handy? Run the demo: `examples/definition-of-done/demo.sh`.
-In CI: [`packages/core/action/example-workflow.yml`](packages/core/action/example-workflow.yml).
+**Try it on one real pull request:** [docs/PILOT.md](docs/PILOT.md) (about 15 minutes, GitHub Actions, report mode first).
 
 ## Why teams trust the answer
 
