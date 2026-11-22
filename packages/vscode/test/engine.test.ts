@@ -120,3 +120,19 @@ describe('what the extension shows and copies', () => {
     expect(p).toMatch(/1\. /);
   });
 });
+
+describe('OpenThunder checks as a receipt-writing plugin', () => {
+  it('runs the installed app, counts its receipts, and says when it is not installed', async () => {
+    const { runOpenThunderChecks } = await import('../src/engine');
+    const calls: string[][] = [];
+    const ok = runOpenThunderChecks('/r', 'main', 'openthunder', (cmd, args) => { calls.push([cmd, ...args]); return JSON.stringify({ receiptsWritten: { count: 8, dir: '.done/receipts', signed: false } }); });
+    expect(ok).toMatchObject({ status: 'written', count: 8, message: 'OpenThunder wrote 8 receipts to .done/receipts (self-reported).' });
+    expect(calls[0]).toEqual(['openthunder', 'done', '--write-receipts', '--json', '--base', 'main']);
+    const notDone = runOpenThunderChecks('/r', 'main', 'openthunder', () => { throw Object.assign(new Error('x'), { status: 1, stdout: JSON.stringify({ receiptsWritten: { count: 3, dir: '.done/receipts', signed: true } }) }); });
+    expect(notDone).toMatchObject({ status: 'written', count: 3 });
+    const missing = runOpenThunderChecks('/r', 'main', 'openthunder', () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); });
+    expect(missing.status).toBe('not-installed');
+    expect(missing.message).toMatch(/free: https:\/\/openthunder\.dev/);
+    expect(runOpenThunderChecks('/r', 'main', 'openthunder', () => '{}').status).toBe('failed');
+  });
+});

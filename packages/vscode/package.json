@@ -75,6 +75,10 @@
       {
         "command": "openthunderCore.checkApi",
         "title": "OpenThunder: Check API Compatibility"
+      },
+      {
+        "command": "openthunderCore.runOpenThunder",
+        "title": "OpenThunder: Run OpenThunder's Checks (free app)"
       }
     ],
     "configuration": {
@@ -84,6 +88,11 @@
           "type": "string",
           "default": "",
           "description": "The branch your change will merge into. Its copy of the policy judges the change. Empty = origin's default branch, then main."
+        },
+        "openthunderCore.openthunderPath": {
+          "type": "string",
+          "default": "openthunder",
+          "description": "The OpenThunder command (the free app's CLI). \"OpenThunder: Run OpenThunder's Checks\" runs it to write evidence for check: openthunder.* requirements."
         },
         "openthunderCore.policyPath": {
           "type": "string",

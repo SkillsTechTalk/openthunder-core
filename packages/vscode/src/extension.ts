@@ -5,7 +5,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parsePolicy, renderDecision, DEFAULT_POLICY_YAML, POLICY_FILE, LEGACY_POLICY_FILE } from 'openthunder-core';
-import { gather, expiringExceptions, lineOfPath, type Gathered } from './engine';
+import { gather, expiringExceptions, lineOfPath, runOpenThunderChecks, type Gathered } from './engine';
 import { panelHtml, prMarkdown, assistantPrompt, statusBarText, type PanelState } from './render';
 
 let last: Gathered | undefined;
@@ -145,6 +145,19 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('openthunderCore.checkApi', async () => { await refresh(); const n = last?.apiBreaks.reduce((a, b) => a + b.findings.length, 0) ?? 0; void vscode.window.showInformationMessage(n ? `OpenThunder: ${n} breaking API change${n === 1 ? '' : 's'} vs ${last!.base}. See the Problems panel.` : 'OpenThunder: no breaking change in the declared API descriptions.'); }),
     vscode.commands.registerCommand('openthunderCore.copyPrSummary', async () => { if (!last) await refresh(); if (!last) return; await vscode.env.clipboard.writeText(prMarkdown(last.decision)); void vscode.window.showInformationMessage('OpenThunder: Definition of Done copied for the pull request.'); }),
     vscode.commands.registerCommand('openthunderCore.copyForAssistant', async () => { if (!last) await refresh(); if (!last) return; await vscode.env.clipboard.writeText(assistantPrompt(last.decision)); void vscode.window.showInformationMessage('OpenThunder: open items copied. Paste them into your AI assistant.'); }),
+    vscode.commands.registerCommand('openthunderCore.runOpenThunder', async () => {
+      const r = root(); if (!r) return;
+      const res = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'OpenThunder: running its checks on this change' },
+        async () => runOpenThunderChecks(r, last?.base ?? cfg().get<string>('baseBranch', ''), cfg().get<string>('openthunderPath', 'openthunder') || 'openthunder'));
+      if (res.status === 'not-installed') {
+        const pick = await vscode.window.showInformationMessage(res.message, 'Get OpenThunder');
+        if (pick) void vscode.env.openExternal(vscode.Uri.parse('https://openthunder.dev/?utm_source=vscode-core&utm_medium=extension&utm_campaign=openthunder-checks'));
+        return;
+      }
+      if (res.status === 'failed') { void vscode.window.showWarningMessage(res.message); return; }
+      void vscode.window.showInformationMessage(res.message);
+      await refresh();
+    }),
     vscode.commands.registerCommand('openthunderCore.init', async () => {
       const r = root(); if (!r) return;
       const configured = cfg().get<string>('policyPath', '');

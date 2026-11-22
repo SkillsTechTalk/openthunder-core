@@ -146,3 +146,34 @@ export function expiringExceptions(text: string, today: string, days = 14): { re
     requirement: e.requirement, expires: e.expires, line: Math.max(1, lines.findIndex((l) => l.includes(e.expires)) + 1),
   }));
 }
+
+// ── OpenThunder's own checks (the free app), as a plugin that writes receipts ─────────────────────────────────
+// The open extension never contains OpenThunder's analyzers. When the policy asks for `check: openthunder.<item>`,
+// this runs the installed `openthunder` command, which writes its evidence as receipts to .done/receipts; the
+// panel then counts them like any other receipt (labeled self-reported unless signed by trusted CI).
+
+export interface OpenThunderRun { status: 'written' | 'not-installed' | 'failed'; message: string; count?: number }
+
+type Exec = (cmd: string, args: string[], opts: { cwd: string; encoding: 'utf8'; maxBuffer: number; timeout: number }) => string;
+
+export function runOpenThunderChecks(root: string, base: string, command = 'openthunder', exec: Exec = execFileSync as unknown as Exec): OpenThunderRun {
+  const args = ['done', '--write-receipts', '--json', ...(base ? ['--base', base] : [])];
+  let out: string;
+  try {
+    out = exec(command, args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 10 * 60 * 1000 });
+  } catch (e) {
+    const err = e as { code?: string; status?: number; stdout?: string };
+    if (err.code === 'ENOENT') return { status: 'not-installed', message: `OpenThunder is not installed (no "${command}" command found). It is free: https://openthunder.dev` };
+    // Exit 1 = Not done: the receipts were still written.
+    if (err.status === 1 && typeof err.stdout === 'string') out = err.stdout;
+    else return { status: 'failed', message: `OpenThunder could not finish, so no receipts were written${err.status !== undefined ? ` (exit ${err.status})` : ''}.` };
+  }
+  try {
+    const j = JSON.parse(out) as { receiptsWritten?: { count: number; dir: string; signed: boolean } };
+    const w = j.receiptsWritten;
+    if (!w) return { status: 'failed', message: 'OpenThunder ran but wrote no receipts (an older version? update it from https://openthunder.dev).' };
+    return { status: 'written', count: w.count, message: `OpenThunder wrote ${w.count} receipt${w.count === 1 ? '' : 's'} to ${w.dir} (${w.signed ? 'signed' : 'self-reported'}).` };
+  } catch {
+    return { status: 'failed', message: 'OpenThunder ran but its output could not be read (an older version? update it from https://openthunder.dev).' };
+  }
+}
