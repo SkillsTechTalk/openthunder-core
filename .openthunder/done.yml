@@ -1,0 +1,6 @@
+# This repository's own Definition of Done (OpenThunder Core checks itself in CI).
+version: 1
+trust: any
+approvers: []
+require:
+  - tests             # the core's tests ran and passed for this exact commit

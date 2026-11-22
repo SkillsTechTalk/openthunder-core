@@ -14,15 +14,18 @@ jobs:
       - run: npm run build
       - run: npm test
 
-  # The GitHub Action exactly as an outside repository uses it: a fresh checkout with nothing built.
-  action:
+  # We use Core on ourselves, exactly as an outside repository does: run the tests (nothing built), then the action
+  # from this checkout. It builds Core on first use and fails the job unless this change is Done.
+  definition-of-done:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
+      - run: git config --global user.email ci@example.com && git config --global user.name CI
+      - run: npm ci && cd packages/core && npx vitest run --reporter=default --reporter=junit --outputFile=junit.xml
       - id: done
         uses: ./packages/core/action
-        with: { base: origin/main, mode: report }
-      - run: test -n "${{ steps.done.outputs.state }}" || grep -q "not set up" "$GITHUB_STEP_SUMMARY"
+        with: { base: origin/main, junit: packages/core/junit.xml, mode: enforce }
+      - run: test "${{ steps.done.outputs.state }}" = done
