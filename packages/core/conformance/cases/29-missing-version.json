@@ -1,0 +1,20 @@
+{
+  "name": "A file without \"version: 1\" (the earlier OpenThunder format) cannot judge anything: fail closed",
+  "policy": "require:\n  - impacted-tests\n",
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "policy-readable": "not-checked"
+    }
+  },
+  "policyEditedByChange": false
+}

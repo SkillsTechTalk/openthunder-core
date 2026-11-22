@@ -128,7 +128,7 @@ export interface Subject {
 
 /** Where the policy came from and whether this change edits it. */
 export interface PolicyIntegrity {
-  /** e.g. "done-core.yml on origin/main". */
+  /** e.g. ".openthunder/done.yml on origin/main". */
   source: string;
   /** The change under review edits the policy file. The edit never judges the change that makes it. */
   editedByChange: boolean;

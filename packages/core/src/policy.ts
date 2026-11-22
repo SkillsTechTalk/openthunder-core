@@ -1,4 +1,4 @@
-// The Definition of Done policy (done-core.yml): what a change must satisfy, which evidence counts, who may approve
+// The Definition of Done policy (.openthunder/done.yml): what a change must satisfy, which evidence counts, who may approve
 // an exception. Parsing never throws; anything that makes the policy unreliable is an error the evaluator treats as
 // an open required item (fail closed).
 //
@@ -16,6 +16,7 @@
 //     - coverage: { min: 80, of: changed }
 //     - security: { fail-on: error }
 //     - check: openapi-compat
+//     - check: openthunder.impacted-tests   # evidence OpenThunder produces (receipts it writes)
 //   recommend:
 //     - check: { id: perf-budget, paths: ["src/hot/**"] }
 //   exceptions:
@@ -142,7 +143,8 @@ export function parsePolicy(text: string): ParsedPolicy {
   }
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return { policy: empty, errors: ['The policy must be a map (version, trust, require, ...).'], notes };
   const o = doc as Record<string, unknown>;
-  if (o.version !== 1) errors.push(`Unsupported policy version ${JSON.stringify(o.version)}; this evaluator reads version 1.`);
+  if (o.version === undefined) errors.push('The policy needs "version: 1" at the top. (A file without it is the earlier OpenThunder format: write each OpenThunder item as "check: openthunder.<item>", for example "check: openthunder.impacted-tests".)');
+  else if (o.version !== 1) errors.push(`Unsupported policy version ${JSON.stringify(o.version)}; this evaluator reads version 1.`);
   const trust = o.trust === undefined ? 'any' : o.trust;
   if (trust !== 'ci' && trust !== 'any') errors.push(`trust must be "ci" or "any" (got ${JSON.stringify(o.trust)}).`);
   const byId = new Map<string, Requirement>();

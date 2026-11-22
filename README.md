@@ -1,21 +1,48 @@
-# OpenThunder Core
+<p align="center">
+  <img src="docs/assets/hero.svg" alt="OpenThunder Core: know whether a change is actually done, and why. Sample result: Not done, 2 of 4 required items open, with a next step." width="100%">
+</p>
 
-**Know whether a change is actually done, and why.** OpenThunder Core checks a change against your team's
-Definition of Done using the evidence your tools already produce: JUnit test reports, lcov coverage, SARIF scanner
-results, and an OpenAPI compatibility check. Every answer names its evidence.
+<p align="center">
+  <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-3B82F6"></a>
+  <a href="https://github.com/SkillsTechTalk/openthunder-core/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/SkillsTechTalk/openthunder-core/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="No account, no AI key, no network" src="https://img.shields.io/badge/no%20account%20%C2%B7%20no%20AI%20key%20%C2%B7%20no%20network-101622">
+</p>
 
+## How it works
+
+<p align="center">
+  <img src="docs/assets/how-it-works.svg" alt="1. Your evidence: JUnit, lcov, SARIF, and OpenAPI reports, bound to the exact commit. 2. Your rules: a small .openthunder/done.yml read from main. 3. One answer: Done, Done with exceptions, or Not done with the next step." width="100%">
+</p>
+
+**In one line:** your tools write reports, your team writes the rules once, and OpenThunder Core tells you whether this
+exact change meets them, item by item, with the evidence and the next step.
+
+## Try it in a minute
+
+```bash
+git clone https://github.com/SkillsTechTalk/openthunder-core && cd openthunder-core
+npm install && npm run build && npm install -g ./packages/core   # gives you the done-core command
+
+cd your-repo
+done-core init                                   # writes .openthunder/done.yml; commit it to main
+done-core collect --format junit --report junit.xml
+done-core collect --format lcov --report coverage/lcov.info --base main
+done-core evaluate --base main
 ```
-Definition of Done: Not done
-2 of 5 required items open: Changed lines covered (at least 80%) (Outdated); The "openapi-compat" check runs and passes (Not checked).
-```
 
-- **Honest statuses.** Passed, Failed, **Not checked** (no evidence is never a pass), **Outdated** (evidence from older
-  code cannot approve newer code), Not applicable, and **Exception approved**: a named approver accepted a risk until a
-  date, and the record still shows what the evidence said.
-- **Rules a change cannot loosen.** The policy is read from the branch you merge into.
-- **Trusted CI evidence.** Receipts signed by your CI's key count where the policy requires it; self-reported results
-  are labeled as such.
-- **Local and keyless.** No account, no server, no AI key, no network. It reads files and git; it never runs your code.
+No repo handy? Run the demo: `examples/definition-of-done/demo.sh`.
+In CI: [`packages/core/action/example-workflow.yml`](packages/core/action/example-workflow.yml).
+
+## Why teams trust the answer
+
+| Promise | What it means |
+|---|---|
+| **No evidence is never a pass** | Missing evidence is *Not checked*, and a required item that is Not checked keeps the change Not done. |
+| **Old evidence never approves new code** | Results are bound to the exact commit. A report from older code is *Outdated*. |
+| **Rules a change cannot loosen** | The policy is read from the branch you merge into, not from the change. |
+| **Exceptions stay honest** | A named approver accepts a risk until a date, and the record still shows what the evidence said. |
+| **Trusted CI evidence** | Receipts signed by your CI key count where the policy requires it; local results are labeled self-reported. |
+| **Local and keyless** | It reads files and git. It never runs your code, and nothing leaves your machine. |
 
 ## What is in this repository
 
@@ -25,28 +52,14 @@ Definition of Done: Not done
 | [`packages/vscode`](packages/vscode) | **OpenThunder: Definition of Done** for VS Code, including a GitHub Copilot agent-mode tool |
 | [`packages/core/conformance`](packages/core/conformance) | The reference behavior any implementation can run |
 
-## Quick start
-
-```bash
-git clone https://github.com/SkillsTechTalk/openthunder-core && cd openthunder-core
-npm install && npm run build && npm install -g ./packages/core   # gives you the done-core command
-
-cd your-repo
-done-core init                      # writes .openthunder/done-core.yml; commit it to your main branch
-done-core collect --format junit --report junit.xml
-done-core collect --format lcov --report coverage/lcov.info --base main
-done-core evaluate --base main
-```
-
-Or try the five-minute demo: `examples/definition-of-done/demo.sh`.
-
-In CI, see [`packages/core/action/example-workflow.yml`](packages/core/action/example-workflow.yml).
+The file format is in [docs/FORMATS.md](docs/FORMATS.md).
 
 ## Open source, and what is not
 
 This repository is Apache 2.0: use it, change it, ship it, including commercially. The official OpenThunder downloads
-(Desktop, the Marketplace extension) are free and build on this code, and add proprietary analyzers as clearly labeled
-plugins. Team and Enterprise features are a paid service. See [docs/BOUNDARY.md](docs/BOUNDARY.md).
+(Desktop, the Marketplace extension) are free, build on this code, and add proprietary analyzers as clearly labeled
+plugins that write evidence this core reads. Team and Enterprise features are a paid service.
+See [docs/BOUNDARY.md](docs/BOUNDARY.md).
 
 ## Contributing
 

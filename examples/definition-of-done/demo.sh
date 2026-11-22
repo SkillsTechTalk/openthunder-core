@@ -20,7 +20,7 @@ cat > openapi.json <<'JSON'
 JSON
 printf 'junit.xml\nlcov.info\n.done/\n' > .gitignore
 mkdir -p .openthunder
-cat > .openthunder/done-core.yml <<'YML'
+cat > .openthunder/done.yml <<'YML'
 version: 1
 trust: any
 approvers: ["Jordan (tech lead)"]

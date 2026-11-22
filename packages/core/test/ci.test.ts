@@ -27,7 +27,7 @@ beforeEach(() => {
   git('init', '-q', '-b', 'main'); git('config', 'user.email', 't@example.com'); git('config', 'user.name', 'T');
   git('remote', 'add', 'origin', remote);
   fs.mkdirSync(path.join(repo, '.openthunder')); fs.mkdirSync(path.join(repo, 'src'));
-  fs.writeFileSync(path.join(repo, '.openthunder/done-core.yml'), `version: 1\ntrust: ci\nkeys:\n  - id: ci\n    public-key: |\n${pem}\nrequire:\n  - tests\n  - check: openapi-compat\n`);
+  fs.writeFileSync(path.join(repo, '.openthunder/done.yml'), `version: 1\ntrust: ci\nkeys:\n  - id: ci\n    public-key: |\n${pem}\nrequire:\n  - tests\n  - check: openapi-compat\n`);
   fs.writeFileSync(path.join(repo, 'openapi.json'), JSON.stringify({ openapi: '3.0.3', paths: { '/a': { get: { responses: { 200: {} } } } } }));
   fs.writeFileSync(path.join(repo, 'src/a.ts'), 'export const a = 1;\n');
   fs.writeFileSync(path.join(repo, '.gitignore'), 'junit.xml\n.done/\n');
@@ -67,8 +67,8 @@ describe('done-core ci', () => {
   });
 
   it('no policy on the base branch: says how to set it up; fails only in enforce mode', () => {
-    git('checkout', '-q', 'main'); git('rm', '-q', '.openthunder/done-core.yml'); git('commit', '-qm', 'rm'); git('push', '-q', 'origin', 'main'); git('fetch', '-q', 'origin'); git('checkout', '-q', 'pr');
-    expect(run(['ci', '--base', 'origin/main']).text).toMatch(/No \.openthunder\/done-core\.yml on origin\/main/);
+    git('checkout', '-q', 'main'); git('rm', '-q', '.openthunder/done.yml'); git('commit', '-qm', 'rm'); git('push', '-q', 'origin', 'main'); git('fetch', '-q', 'origin'); git('checkout', '-q', 'pr');
+    expect(run(['ci', '--base', 'origin/main']).text).toMatch(/No \.openthunder\/done\.yml on origin\/main/);
     expect(run(['ci', '--base', 'origin/main', '--mode', 'enforce']).code).toBe(1);
     expect(fs.readFileSync(summary, 'utf8')).toMatch(/### Definition of Done: not set up/);
   });

@@ -13,7 +13,7 @@ beforeAll(() => {
   const git = (...a: string[]) => execFileSync('git', a, { cwd: repo, stdio: 'ignore' });
   git('init', '-q', '-b', 'main'); git('config', 'user.email', 't@example.com'); git('config', 'user.name', 'T');
   fs.mkdirSync(path.join(repo, '.openthunder')); fs.mkdirSync(path.join(repo, 'src'));
-  fs.writeFileSync(path.join(repo, '.openthunder/done-core.yml'), 'version: 1\nrequire:\n  - tests\n');
+  fs.writeFileSync(path.join(repo, '.openthunder/done.yml'), 'version: 1\nrequire:\n  - tests\n');
   fs.writeFileSync(path.join(repo, 'src/a.ts'), 'export const a = 1;\n');
   git('add', '-A'); git('commit', '-qm', 'base'); git('checkout', '-q', '-b', 'f');
   fs.writeFileSync(path.join(repo, 'src/a.ts'), 'export const a = 2;\n');

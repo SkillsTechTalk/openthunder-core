@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-labelledby="t d">
+  <title id="t">OpenThunder Core</title>
+  <desc id="d">Know whether a change is actually done, and why. A sample result: Not done, with each requirement's status and the next step.</desc>
+  <defs>
+    <linearGradient id="logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2196F3"/><stop offset="1" stop-color="#6B35DD"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1120"/><stop offset="1" stop-color="#080B12"/></linearGradient>
+    <style>
+      .sans{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+      .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    </style>
+  </defs>
+  <rect width="1280" height="440" rx="24" fill="url(#bg)"/>
+  <rect x="0.5" y="0.5" width="1279" height="439" rx="24" fill="none" stroke="#1E293B"/>
+
+  <!-- brand -->
+  <g transform="translate(72 92)">
+    <path d="M28 0 56 16v32L28 64 0 48V16z" fill="none" stroke="url(#logo)" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M32 12 18 36h10l-3 16 14-24H29z" fill="url(#logo)"/>
+    <text x="76" y="44" class="sans" font-size="34" font-weight="700" fill="#F8FAFC">Open<tspan fill="#3B82F6">Thunder</tspan><tspan fill="#94A3B8" font-weight="500"> Core</tspan></text>
+  </g>
+  <text x="72" y="226" class="sans" font-size="44" font-weight="700" fill="#F8FAFC">Know whether a change</text>
+  <text x="72" y="282" class="sans" font-size="44" font-weight="700" fill="#F8FAFC">is actually <tspan fill="#22C55E">done</tspan>, and why.</text>
+  <text x="72" y="330" class="sans" font-size="20" fill="#94A3B8">Your team's Definition of Done, checked against real evidence.</text>
+  <text x="72" y="358" class="sans" font-size="20" fill="#94A3B8">No account, no AI key, no network.</text>
+  <g class="mono" font-size="15">
+    <rect x="72" y="380" width="128" height="30" rx="15" fill="#101622" stroke="#1E293B"/><text x="136" y="400" text-anchor="middle" fill="#CBD5E1">Apache 2.0</text>
+    <rect x="210" y="380" width="128" height="30" rx="15" fill="#101622" stroke="#1E293B"/><text x="274" y="400" text-anchor="middle" fill="#CBD5E1">CLI + Action</text>
+    <rect x="348" y="380" width="96" height="30" rx="15" fill="#101622" stroke="#1E293B"/><text x="396" y="400" text-anchor="middle" fill="#CBD5E1">VS Code</text>
+  </g>
+
+  <!-- result card -->
+  <g transform="translate(700 56)">
+    <rect width="512" height="328" rx="16" fill="#101622" stroke="#1E293B"/>
+    <text x="28" y="44" class="sans" font-size="15" fill="#94A3B8" letter-spacing="1.2">DEFINITION OF DONE</text>
+    <text x="28" y="80" class="sans" font-size="28" font-weight="700" fill="#F87171">Not done</text>
+    <text x="150" y="80" class="sans" font-size="17" fill="#94A3B8">2 of 4 required items open</text>
+    <line x1="28" y1="100" x2="484" y2="100" stroke="#1E293B"/>
+    <g class="sans" font-size="17">
+      <g transform="translate(28 134)"><circle cx="8" cy="-6" r="8" fill="#22C55E"/><text x="28" y="0" fill="#E2E8F0">Tests run and pass</text><text x="456" y="0" text-anchor="end" fill="#22C55E">Passed</text></g>
+      <g transform="translate(28 174)"><circle cx="8" cy="-6" r="8" fill="#F59E0B"/><text x="28" y="0" fill="#E2E8F0">Changed lines covered (80%)</text><text x="456" y="0" text-anchor="end" fill="#F59E0B">Outdated</text></g>
+      <g transform="translate(28 214)"><circle cx="8" cy="-6" r="8" fill="none" stroke="#94A3B8" stroke-width="2.5"/><text x="28" y="0" fill="#E2E8F0">API stays compatible</text><text x="456" y="0" text-anchor="end" fill="#94A3B8">Not checked</text></g>
+      <g transform="translate(28 254)"><circle cx="8" cy="-6" r="8" fill="#22C55E"/><text x="28" y="0" fill="#E2E8F0">No security finding</text><text x="456" y="0" text-anchor="end" fill="#22C55E">Passed</text></g>
+    </g>
+    <rect x="28" y="276" width="456" height="34" rx="8" fill="#182131"/>
+    <text x="42" y="298" class="sans" font-size="15" fill="#93C5FD">Next: re-run coverage on this commit, then check again</text>
+  </g>
+</svg>

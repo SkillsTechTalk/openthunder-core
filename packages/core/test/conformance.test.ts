@@ -32,7 +32,7 @@ function expandReceipt(r: any, subject: any): EvidenceReceipt {
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
 
 describe('Definition of Done conformance', () => {
-  it('has the cases', () => { expect(files.length).toBeGreaterThanOrEqual(26); });
+  it('has the cases', () => { expect(files.length).toBeGreaterThanOrEqual(29); });
   for (const f of files) {
     const c = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
     it(`${f}: ${c.name}`, () => {

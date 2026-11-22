@@ -1,0 +1,32 @@
+{
+  "name": "An exception can name a check by its check id, and it still keeps what the evidence said",
+  "policy": "version: 1\napprovers: [\"Jordan (tech lead)\"]\nrequire:\n  - check: openthunder.impacted-tests\nexceptions:\n  - { requirement: openthunder.impacted-tests, reason: \"Flaky runner, tracked\", approver: \"Jordan (tech lead)\", expires: 2026-12-31 }\n",
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "check",
+      "check": "openthunder.impacted-tests",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "summary": "1 impacted test failed.",
+      "identity": "local"
+    }
+  ],
+  "expect": {
+    "state": "done-with-exceptions",
+    "items": {
+      "check:openthunder.impacted-tests": "exception"
+    },
+    "underlying": {
+      "check:openthunder.impacted-tests": "failed"
+    }
+  },
+  "policyEditedByChange": false
+}

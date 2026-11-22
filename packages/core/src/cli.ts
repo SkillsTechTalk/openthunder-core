@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // done-core: the standalone Definition of Done CLI . No account, no AI key, no network.
 //
-//   done-core init                                   write the default policy to .openthunder/done-core.yml
+//   done-core init                                   write the default policy to .openthunder/done.yml
 //   done-core collect --format junit|lcov|sarif --report <file> [--base <ref>]
 //   done-core openapi --spec <path> --base <ref>     compare the API description on base vs this change
 //   done-core evaluate --base <ref> [--now <iso>] [--json]
@@ -21,10 +21,10 @@ import { evaluate, renderDecision } from './evaluate';
 import { decisionMarkdown } from './markdown';
 import { generateKeyPair } from './receipt';
 import {
-  buildReceipt, writeReceipt, readReceipts, repositoryIdentity, currentRevision, changedFiles, changedLines, fileAtRef, executionFromEnv,
+  buildReceipt, writeReceipt, readReceipts, repositoryIdentity, currentRevision, changedFiles, changedLines, fileAtRef, executionFromEnv, policyAtBase, POLICY_FILE,
 } from './collect';
 
-export const POLICY_FILE = '.openthunder/done-core.yml';
+export { POLICY_FILE, LEGACY_POLICY_FILE } from './collect';
 export const RECEIPTS_DIR = '.done/receipts';
 
 function args(argv: string[]): { cmd: string; flags: Record<string, string | true> } {
@@ -141,8 +141,7 @@ export function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv
       }
       // Receipts other steps wrote (for example a plugin analyzer), used as they are.
       receipts.push(...readReceipts(path.join(cwd, str(flags, 'receipts') ?? RECEIPTS_DIR)).receipts);
-      const policyPath = str(flags, 'policy-path') ?? POLICY_FILE;
-      const trustedText = fileAtRef(cwd, base, policyPath);
+      const { policyPath, trustedText } = policyAtBase(cwd, base, str(flags, 'policy-path'));
       if (trustedText === null) {
         const msg = `No ${policyPath} on ${base}, so there is no Definition of Done to check. Add one with \`done-core init\` and merge it first.`;
         if (env.GITHUB_STEP_SUMMARY) fs.appendFileSync(env.GITHUB_STEP_SUMMARY, `### Definition of Done: not set up\n\n${msg}\n`);
@@ -169,8 +168,7 @@ export function main(argv: string[], cwd = process.cwd(), env: NodeJS.ProcessEnv
     if (cmd === 'evaluate') {
       const base = str(flags, 'base');
       if (!base) { err('evaluate needs --base <ref> (the branch the change will merge into; its policy judges the change).'); return 2; }
-      const policyPath = str(flags, 'policy-path') ?? POLICY_FILE;
-      const trustedText = fileAtRef(cwd, base, policyPath);
+      const { policyPath, trustedText } = policyAtBase(cwd, base, str(flags, 'policy-path'));
       if (trustedText === null) { err(`No ${policyPath} on ${base}. Run \`done-core init\`, commit it to ${base}, then evaluate.`); return 2; }
       let working: string | null = null;
       try { working = fs.readFileSync(path.join(cwd, policyPath), 'utf8'); } catch { working = null; }

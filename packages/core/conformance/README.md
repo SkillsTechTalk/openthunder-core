@@ -9,7 +9,7 @@ implementation conforms when it produces the expected `state` and the expected s
 ```json
 {
   "name": "plain words: what this case protects",
-  "policy": "<done-core.yml text; {{key:NAME}} is replaced with the PEM public key of test key NAME>",
+  "policy": "<policy text (.openthunder/done.yml); {{key:NAME}} is replaced with the PEM public key of test key NAME>",
   "policyEditedByChange": false,
   "subject": { "repository": "example.com/acme/app", "revision": "aaaa...", "changedFiles": ["src/a.ts"] },
   "now": "2026-11-20T12:00:00Z",

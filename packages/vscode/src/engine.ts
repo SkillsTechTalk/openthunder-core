@@ -5,7 +5,7 @@ import * as path from 'path';
 import { execFileSync } from 'child_process';
 import {
   evaluate, parsePolicy, importJUnit, importLcov, importSarif, compareOpenApi, parseSpec, buildReceipt, readReceipts,
-  currentRevision, changedFiles, changedLines, fileAtRef, repositoryIdentity, DEFAULT_POLICY_YAML,
+  currentRevision, changedFiles, changedLines, fileAtRef, repositoryIdentity, policyAtBase, DEFAULT_POLICY_YAML,
   type Decision, type EvidenceReceipt, type EvidenceFinding, type ImportedEvidence,
 } from 'openthunder-core';
 
@@ -15,7 +15,8 @@ export interface GatherOptions {
   root: string;
   /** Configured base branch; empty = detect. */
   base?: string;
-  policyPath: string;
+  /** Where the policy lives; empty = .openthunder/done.yml (or the earlier .openthunder/done-core.yml). */
+  policyPath?: string;
   /** Candidate report files (absolute), found by the host (VS Code's file search). */
   reportFiles: string[];
   /** OpenAPI files (repo-relative) to compare with the base branch. */
@@ -81,10 +82,10 @@ export function gather(o: GatherOptions): Gathered {
   const { revision } = currentRevision(root);
   const changed = changedFiles(root, base);
   const lines = changedLines(root, base);
-  const trustedText = fileAtRef(root, base, o.policyPath);
+  const { policyPath, trustedText } = policyAtBase(root, base, o.policyPath || undefined);
   const adopted = trustedText !== null;
   let working: string | null = null;
-  try { working = fs.readFileSync(path.join(root, o.policyPath), 'utf8'); } catch { working = null; }
+  try { working = fs.readFileSync(path.join(root, policyPath), 'utf8'); } catch { working = null; }
   const policyEditedLocally = adopted && working !== null && working !== trustedText;
 
   // Local reports carry no revision. Bind one to this change only when it is newer than the last commit and every
@@ -130,7 +131,7 @@ export function gather(o: GatherOptions): Gathered {
 
   const decision = evaluate({
     policy: parsePolicy(adopted ? trustedText! : DEFAULT_POLICY_YAML),
-    integrity: { source: adopted ? `${o.policyPath} on ${base}` : 'the OpenThunder default (not adopted by this repository)', editedByChange: policyEditedLocally },
+    integrity: { source: adopted ? `${policyPath} on ${base}` : 'the OpenThunder default (not adopted by this repository)', editedByChange: policyEditedLocally },
     receipts, subject: { repository, revision, changedFiles: changed }, now: o.now ?? new Date().toISOString(),
   });
   return { decision, base, adopted, policyEditedLocally, coverageGaps, findings, apiBreaks, reports };

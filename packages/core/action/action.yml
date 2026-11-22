@@ -25,9 +25,9 @@ inputs:
     required: false
     default: report
   policy-path:
-    description: Where the policy lives on the base branch.
+    description: Where the policy lives on the base branch. Empty = .openthunder/done.yml (or the earlier .openthunder/done-core.yml).
     required: false
-    default: .openthunder/done-core.yml
+    default: ''
   signing-key:
     description: Ed25519 private key (PEM) from a repository secret. With it, receipts count as trusted CI evidence.
     required: false
@@ -58,7 +58,8 @@ runs:
         IN_MODE: ${{ inputs.mode }}
         IN_POLICY: ${{ inputs.policy-path }}
       run: |
-        args=(ci --mode "$IN_MODE" --policy-path "$IN_POLICY")
+        args=(ci --mode "$IN_MODE")
+        [ -n "$IN_POLICY" ] && args+=(--policy-path "$IN_POLICY")
         [ -n "$IN_BASE" ] && args+=(--base "$IN_BASE")
         [ -n "$IN_JUNIT" ] && args+=(--junit "$IN_JUNIT")
         [ -n "$IN_LCOV" ] && args+=(--lcov "$IN_LCOV")

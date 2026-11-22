@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { parsePolicy, renderDecision, DEFAULT_POLICY_YAML } from 'openthunder-core';
+import { parsePolicy, renderDecision, DEFAULT_POLICY_YAML, POLICY_FILE, LEGACY_POLICY_FILE } from 'openthunder-core';
 import { gather, expiringExceptions, lineOfPath, type Gathered } from './engine';
 import { panelHtml, prMarkdown, assistantPrompt, statusBarText, type PanelState } from './render';
 
@@ -100,7 +100,8 @@ export function activate(context: vscode.ExtensionContext) {
     const r = root();
     if (!r) return;
     const rel = path.relative(r, doc.uri.fsPath).split(path.sep).join('/');
-    if (rel !== cfg().get<string>('policyPath', '.openthunder/done-core.yml')) return;
+    const configured = cfg().get<string>('policyPath', '');
+    if (configured ? rel !== configured : rel !== POLICY_FILE && rel !== LEGACY_POLICY_FILE) return;
     const text = doc.getText();
     const p = parsePolicy(text);
     const ds = p.errors.map((e) => { const d = new vscode.Diagnostic(new vscode.Range(0, 0, 0, 200), e, vscode.DiagnosticSeverity.Error); d.source = 'OpenThunder policy'; return d; });
@@ -119,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (running) return running;
     running = (async () => {
       try {
-        last = gather({ root: r, base: cfg().get<string>('baseBranch', ''), policyPath: cfg().get<string>('policyPath', '.openthunder/done-core.yml'), reportFiles: await findReports(), openApiFiles: await findOpenApi(r) });
+        last = gather({ root: r, base: cfg().get<string>('baseBranch', ''), policyPath: cfg().get<string>('policyPath', ''), reportFiles: await findReports(), openApiFiles: await findOpenApi(r) });
         lastError = undefined;
         const sb = statusBarText(last.decision, last.adopted);
         status.text = sb.text; status.tooltip = sb.tooltip; status.show();
@@ -146,7 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('openthunderCore.copyForAssistant', async () => { if (!last) await refresh(); if (!last) return; await vscode.env.clipboard.writeText(assistantPrompt(last.decision)); void vscode.window.showInformationMessage('OpenThunder: open items copied. Paste them into your AI assistant.'); }),
     vscode.commands.registerCommand('openthunderCore.init', async () => {
       const r = root(); if (!r) return;
-      const uri = vscode.Uri.file(path.join(r, cfg().get<string>('policyPath', '.openthunder/done-core.yml')));
+      const configured = cfg().get<string>('policyPath', '');
+      const existing = !configured && fs.existsSync(path.join(r, LEGACY_POLICY_FILE)) && !fs.existsSync(path.join(r, POLICY_FILE)) ? LEGACY_POLICY_FILE : undefined;
+      const uri = vscode.Uri.file(path.join(r, configured || existing || POLICY_FILE));
       try { await vscode.workspace.fs.stat(uri); void vscode.window.showInformationMessage('OpenThunder: a Definition of Done already exists. Opening it.'); }
       catch { await vscode.workspace.fs.writeFile(uri, Buffer.from(DEFAULT_POLICY_YAML)); }
       await vscode.window.showTextDocument(uri);

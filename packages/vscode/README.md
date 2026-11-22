@@ -6,7 +6,7 @@ See whether your change meets your team's Definition of Done, and the evidence b
 - **Evidence, not opinions:** your JUnit test reports, lcov coverage, SARIF scanner results, and an OpenAPI compatibility check, each tied to the code it describes. A report older than your code is **Outdated**; a missing one is **Not checked**, never a pass.
 - **Changed lines only:** uncovered changed lines are marked in the editor; scanner findings show only on the files you changed.
 - **Accepted risk stays visible:** an exception names its approver and expiry, and the original result is still shown.
-- **Your policy, your rules:** `.openthunder/done-core.yml` is read from the branch you merge into, so a change cannot loosen the rules that judge it.
+- **Your policy, your rules:** `.openthunder/done.yml` is read from the branch you merge into, so a change cannot loosen the rules that judge it.
 - **Works with GitHub Copilot:** in agent mode, Copilot can call the *Definition of Done* tool before it says a change is finished. Reference it in chat as `#definitionOfDone`.
 
 Local only: it reads files and git history, never runs project code, makes no network call, and needs no account or AI key. It works in Restricted Mode.

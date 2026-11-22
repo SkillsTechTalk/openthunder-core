@@ -125,3 +125,16 @@ export function executionFromEnv(env: NodeJS.ProcessEnv = process.env): Evidence
   if (env.GITLAB_CI === 'true' && env.CI_PROJECT_PATH) return { identity: `gitlab-ci:${env.CI_PROJECT_PATH.toLowerCase()}`, ...(env.CI_PIPELINE_ID ? { runId: env.CI_PIPELINE_ID } : {}) };
   return { identity: 'local' };
 }
+
+export const POLICY_FILE = '.openthunder/done.yml';
+/** The earlier name, still read when the base branch has no done.yml. */
+export const LEGACY_POLICY_FILE = '.openthunder/done-core.yml';
+
+/** The policy that judges a change: the base branch's copy (an explicit path, else done.yml, else the earlier name). */
+export function policyAtBase(cwd: string, base: string, explicit?: string): { policyPath: string; trustedText: string | null } {
+  if (explicit) return { policyPath: explicit, trustedText: fileAtRef(cwd, base, explicit) };
+  const text = fileAtRef(cwd, base, POLICY_FILE);
+  if (text !== null) return { policyPath: POLICY_FILE, trustedText: text };
+  const legacy = fileAtRef(cwd, base, LEGACY_POLICY_FILE);
+  return legacy !== null ? { policyPath: LEGACY_POLICY_FILE, trustedText: legacy } : { policyPath: POLICY_FILE, trustedText: null };
+}

@@ -23,6 +23,7 @@
     "release readiness"
   ],
   "activationEvents": [
+    "workspaceContains:.openthunder/done.yml",
     "workspaceContains:.openthunder/done-core.yml",
     "workspaceContains:.git",
     "onLanguage:yaml"
@@ -86,8 +87,8 @@
         },
         "openthunderCore.policyPath": {
           "type": "string",
-          "default": ".openthunder/done-core.yml",
-          "description": "Where the Definition of Done policy lives (read from the base branch)."
+          "default": "",
+          "description": "Where the Definition of Done policy lives (read from the base branch). Empty = .openthunder/done.yml, or the earlier .openthunder/done-core.yml."
         },
         "openthunderCore.reports": {
           "type": "array",
@@ -127,7 +128,7 @@
         "canBeReferencedInPrompt": true,
         "icon": "$(checklist)",
         "userDescription": "Check whether the current change meets the team's Definition of Done, with the evidence behind each answer.",
-        "modelDescription": "Deterministically checks the current git change in the open workspace against the team's Definition of Done policy (.openthunder/done-core.yml on the base branch), using the test, coverage, scanner, and API-compatibility evidence found in the workspace. Returns Done, Done with exceptions, or Not done, and for each requirement its status (Passed, Failed, Not checked, Outdated, Not applicable, Exception approved), the evidence, and the next step. Use it before saying a change is finished or ready for review, and to find what is still missing. It does not run tests or project code.",
+        "modelDescription": "Deterministically checks the current git change in the open workspace against the team's Definition of Done policy (.openthunder/done.yml on the base branch), using the test, coverage, scanner, and API-compatibility evidence found in the workspace. Returns Done, Done with exceptions, or Not done, and for each requirement its status (Passed, Failed, Not checked, Outdated, Not applicable, Exception approved), the evidence, and the next step. Use it before saying a change is finished or ready for review, and to find what is still missing. It does not run tests or project code.",
         "inputSchema": {
           "type": "object",
           "properties": {}

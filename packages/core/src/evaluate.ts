@@ -19,6 +19,8 @@ import type {
 
 export const POLICY_INTACT = 'policy-intact';
 export const POLICY_READABLE = 'policy-readable';
+/** Checks whose evidence OpenThunder produces ("check: openthunder.impacted-tests"). */
+export const OPENTHUNDER_CHECK_PREFIX = 'openthunder.';
 
 export const STATUS_LABEL: Record<ItemStatus, string> = {
   passed: 'Passed', failed: 'Failed', 'not-checked': 'Not checked', outdated: 'Outdated',
@@ -63,13 +65,13 @@ const TITLES: Record<string, (r: Requirement) => string> = {
   tests: () => 'Tests run and pass',
   coverage: (r) => `${r.of === 'all' ? 'Codebase' : 'Changed lines'} covered (at least ${r.min ?? 80}%)`,
   security: (r) => `No scanner finding at ${r.failOn ?? 'error'} level or above on the changed files`,
-  check: (r) => `The "${r.checkId}" check runs and passes`,
+  check: (r) => r.checkId?.startsWith(OPENTHUNDER_CHECK_PREFIX) ? `OpenThunder: ${r.checkId.slice(OPENTHUNDER_CHECK_PREFIX.length).replace(/-/g, ' ')}` : `The "${r.checkId}" check runs and passes`,
 };
 const WHY: Record<string, (r: Requirement) => string> = {
   tests: () => 'The team requires the tests to run and pass on this exact revision.',
   coverage: (r) => `The team requires at least ${r.min ?? 80}% line coverage of ${r.of === 'all' ? 'the codebase' : 'the changed lines'} (a team setting).`,
   security: (r) => `The team does not merge a change with a ${r.failOn ?? 'error'}-level scanner finding on the files it changes.`,
-  check: (r) => `The team requires the "${r.checkId}" check to pass on this revision.`,
+  check: (r) => r.checkId?.startsWith(OPENTHUNDER_CHECK_PREFIX) ? `The team requires OpenThunder's "${r.checkId.slice(OPENTHUNDER_CHECK_PREFIX.length)}" check to pass on this revision.` : `The team requires the "${r.checkId}" check to pass on this revision.`,
 };
 
 function matchesRequirement(req: Requirement, r: EvidenceReceipt): boolean {
@@ -127,7 +129,8 @@ function decideFromReceipts(req: Requirement, current: Counted[], subject: Subje
 function exceptionFor(req: Requirement, input: EvaluateInput, today: string, notes: string[]): PolicyException | undefined {
   const approvers = input.policy.policy.approvers.map((a) => a.toLowerCase());
   for (const e of input.policy.policy.exceptions) {
-    if (e.requirement !== req.id) continue;
+    // An exception names the requirement by its id, or a check by its check id ("openthunder.impacted-tests").
+    if (e.requirement !== req.id && !(req.type === 'check' && e.requirement === req.checkId)) continue;
     if (!approvers.includes(e.approver.toLowerCase())) { notes.push(`The exception for "${req.id}" names ${e.approver}, who is not listed under "approvers"; it does not apply.`); continue; }
     if (e.expires < today) { notes.push(`The exception for "${req.id}" approved by ${e.approver} expired on ${e.expires}; it does not apply.`); continue; }
     if (e.paths?.length && !input.subject.changedFiles.every((f) => e.paths!.some((p) => globMatch(p, f)))) {
@@ -190,7 +193,7 @@ export function evaluate(input: EvaluateInput): Decision {
       } else if (relevant.length && needs === 'ci') {
         r = { ...base, status: 'not-checked', evidence: `Only self-reported evidence (${list([...new Set(relevant.map((x) => x.receipt.execution.identity))])}); this requirement counts only receipts signed by trusted CI.`, next: 'Run it in CI with the trusted collector, so the receipt is signed.', receipts: relevant.map(({ receipt, v }) => ({ check: `${receipt.check.id}@${receipt.check.version}`, revision: receipt.subject.revision, trust: v.trust })) };
       } else {
-        r = { ...base, status: 'not-checked', evidence: 'No evidence for this requirement was provided for this change.', next: req.type === 'check' ? `Run the "${req.checkId}" check and collect its receipt.` : `Collect a ${req.type === 'tests' ? 'JUnit' : req.type === 'coverage' ? 'coverage (lcov)' : 'SARIF'} report for this revision.` };
+        r = { ...base, status: 'not-checked', evidence: 'No evidence for this requirement was provided for this change.', next: req.type === 'check' ? (req.checkId!.startsWith(OPENTHUNDER_CHECK_PREFIX) ? `OpenThunder produces this evidence: run \`openthunder done --write-receipts\` in this repository (free at openthunder.dev).` : `Run the "${req.checkId}" check and collect its receipt.`) : `Collect a ${req.type === 'tests' ? 'JUnit' : req.type === 'coverage' ? 'coverage (lcov)' : 'SARIF'} report for this revision.` };
       }
     } else {
       const d = decideFromReceipts(req, current, input.subject);

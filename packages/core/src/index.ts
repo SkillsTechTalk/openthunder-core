@@ -7,4 +7,4 @@ export * from './policy';
 export * from './evaluate';
 export * from './markdown';
 export * from './collect';
-export { main } from './cli';
+export { main, RECEIPTS_DIR } from './cli';

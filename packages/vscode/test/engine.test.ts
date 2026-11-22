@@ -10,13 +10,13 @@ let repo: string;
 const git = (...a: string[]) => execFileSync('git', a, { cwd: repo, stdio: 'ignore' });
 const write = (rel: string, text: string) => { fs.mkdirSync(path.dirname(path.join(repo, rel)), { recursive: true }); fs.writeFileSync(path.join(repo, rel), text); };
 const touchOld = (rel: string) => { const t = new Date(Date.now() - 3600_000); fs.utimesSync(path.join(repo, rel), t, t); };
-const opts = (reports: string[] = [], openApiFiles: string[] = []) => ({ root: repo, base: 'main', policyPath: '.openthunder/done-core.yml', reportFiles: reports.map((r) => path.join(repo, r)), openApiFiles, now: '2026-11-20T12:00:00Z' });
+const opts = (reports: string[] = [], openApiFiles: string[] = []) => ({ root: repo, base: 'main', policyPath: '', reportFiles: reports.map((r) => path.join(repo, r)), openApiFiles, now: '2026-11-20T12:00:00Z' });
 
 beforeEach(() => {
   repo = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-vscode-core-'));
   git('init', '-q', '-b', 'main'); git('config', 'user.email', 't@example.com'); git('config', 'user.name', 'T');
   write('src/cart.ts', 'export const total = 1;\n');
-  write('.openthunder/done-core.yml', 'version: 1\napprovers: [Jordan]\nrequire:\n  - tests\n  - coverage: { min: 80, of: changed }\n  - check: openapi-compat\n');
+  write('.openthunder/done.yml', 'version: 1\napprovers: [Jordan]\nrequire:\n  - tests\n  - coverage: { min: 80, of: changed }\n  - check: openapi-compat\n');
   write('openapi.json', JSON.stringify({ openapi: '3.0.3', paths: { '/cart': { get: { responses: { 200: { content: { 'application/json': { schema: { type: 'object', properties: { total: { type: 'number' } } } } } } } } } } }));
   git('add', '-A'); git('commit', '-qm', 'base'); git('checkout', '-q', '-b', 'f');
   write('src/cart.ts', 'export const total = 1;\nexport const count = 2;\n');
@@ -66,7 +66,7 @@ describe('gather: evidence found in the workspace, decided by OpenThunder Core',
   });
 
   it('editing the policy locally is flagged, and the base branch copy still judges the change', () => {
-    write('.openthunder/done-core.yml', 'version: 1\nrequire: []\n');
+    write('.openthunder/done.yml', 'version: 1\nrequire: []\n');
     const g = gather(opts());
     expect(g.policyEditedLocally).toBe(true);
     expect(g.decision.items.find((i) => i.id === 'policy-intact')!.status).toBe('not-checked');
@@ -74,7 +74,7 @@ describe('gather: evidence found in the workspace, decided by OpenThunder Core',
   });
 
   it('no policy on the base branch: the OpenThunder default, marked as not adopted', () => {
-    git('stash', '-q'); git('checkout', '-q', 'main'); git('rm', '-q', '.openthunder/done-core.yml'); git('commit', '-qm', 'rm'); git('checkout', '-q', 'f'); git('rebase', '-q', 'main'); git('stash', 'pop', '-q');
+    git('stash', '-q'); git('checkout', '-q', 'main'); git('rm', '-q', '.openthunder/done.yml'); git('commit', '-qm', 'rm'); git('checkout', '-q', 'f'); git('rebase', '-q', 'main'); git('stash', 'pop', '-q');
     const g = gather(opts());
     expect(g.adopted).toBe(false);
     expect(g.decision.policy.source).toMatch(/OpenThunder default/);
@@ -100,7 +100,7 @@ describe('helpers', () => {
 
 describe('what the extension shows and copies', () => {
   it('panel: open items first with next step and why; escapes text; the policy guard and default notices', () => {
-    write('.openthunder/done-core.yml', 'version: 1\nrequire: []\n');
+    write('.openthunder/done.yml', 'version: 1\nrequire: []\n');
     const g = gather(opts());
     const html = panelHtml({ decision: g.decision, adopted: g.adopted, policyEditedLocally: g.policyEditedLocally, reportsUsed: 0, reportsOutdated: 0 }, 'n0nce', 'vscode-resource:');
     expect(html.indexOf('What still keeps this change from Done')).toBeGreaterThan(-1);

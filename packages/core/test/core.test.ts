@@ -108,7 +108,7 @@ describe('done-core CLI, end to end in a git repository', () => {
     const k = generateKeyPair();
     const policy = `version: 1\ntrust: ci\nkeys:\n  - id: ci\n    public-key: |\n${k.publicKey.trim().split('\n').map((l) => `      ${l}`).join('\n')}\n    identities: ["github-actions:acme/app"]\nrequire:\n  - tests\n`;
     git('checkout', '-q', 'main');
-    fs.writeFileSync(path.join(repo, '.openthunder/done-core.yml'), policy);
+    fs.writeFileSync(path.join(repo, '.openthunder/done.yml'), policy);
     git('commit', '-qam', 'require ci');
     git('checkout', '-q', 'feature'); git('rebase', '-q', 'main');
     fs.writeFileSync(path.join(repo, 'junit.xml'), '<testsuite><testcase name="a"/></testsuite>');
@@ -123,12 +123,22 @@ describe('done-core CLI, end to end in a git repository', () => {
   });
 
   it('a change that loosens the policy is judged by the base branch copy and stays Not done', () => {
-    fs.writeFileSync(path.join(repo, '.openthunder/done-core.yml'), 'version: 1\nrequire: []\n');
+    fs.writeFileSync(path.join(repo, '.openthunder/done.yml'), 'version: 1\nrequire: []\n');
     git('commit', '-qam', 'loosen');
     const r = run(['evaluate', '--base', 'main', '--now', '2026-11-20T12:00:00Z']);
     expect(r.code).toBe(1);
-    expect(r.text).toMatch(/This change edits the policy\. It was judged by \.openthunder\/done-core\.yml on main/);
+    expect(r.text).toMatch(/This change edits the policy\. It was judged by \.openthunder\/done\.yml on main/);
     expect(r.text).toMatch(/Tests run and pass/);
+  });
+
+  it('a base branch that still uses the earlier file name (.openthunder/done-core.yml) is read', () => {
+    git('checkout', '-q', 'main');
+    git('mv', '.openthunder/done.yml', '.openthunder/done-core.yml'); git('commit', '-qm', 'earlier name');
+    git('checkout', '-q', 'feature'); git('rebase', '-q', 'main');
+    const r = run(['evaluate', '--base', 'main', '--now', '2026-11-20T12:00:00Z']);
+    expect(r.code).toBe(1);
+    expect(r.text).toMatch(/Tests run and pass/);
+    expect(r.text).not.toMatch(/This change edits the policy/);
   });
 
   it('OpenAPI: a removed response field that compiles and passes tests is caught', () => {

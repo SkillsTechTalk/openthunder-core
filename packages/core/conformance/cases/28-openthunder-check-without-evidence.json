@@ -1,0 +1,26 @@
+{
+  "name": "A check OpenThunder produces, with no receipt, is Not checked and says how to produce it",
+  "policy": "version: 1\nrequire:\n  - check: openthunder.tests-not-weakened\n",
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "check:openthunder.tests-not-weakened": "not-checked"
+    },
+    "next": {
+      "check:openthunder.tests-not-weakened": "OpenThunder produces this evidence: run `openthunder done --write-receipts` in this repository (free at openthunder.dev)."
+    },
+    "title": {
+      "check:openthunder.tests-not-weakened": "OpenThunder: tests not weakened"
+    }
+  },
+  "policyEditedByChange": false
+}
