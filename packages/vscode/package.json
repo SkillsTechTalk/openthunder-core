@@ -1,0 +1,159 @@
+{
+  "name": "openthunder-dod",
+  "displayName": "OpenThunder: Definition of Done",
+  "description": "See whether your change meets your team's Definition of Done, with the evidence behind each answer. Open source, no account, no server, no AI key. Works with GitHub Copilot agent mode.",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "publisher": "openthunder",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Testing",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "definition of done",
+    "verification",
+    "coverage",
+    "sarif",
+    "openapi",
+    "copilot",
+    "release readiness"
+  ],
+  "activationEvents": [
+    "workspaceContains:.openthunder/done-core.yml",
+    "workspaceContains:.git",
+    "onLanguage:yaml"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true,
+      "description": "OpenThunder reads files and git history only; it never runs project code, so it works the same in Restricted Mode."
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openthunderCore",
+          "title": "OpenThunder",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "openthunderCore": [
+        {
+          "id": "openthunderCore.done",
+          "type": "webview",
+          "name": "Definition of Done"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "openthunderCore.refresh",
+        "title": "OpenThunder: Check Definition of Done"
+      },
+      {
+        "command": "openthunderCore.init",
+        "title": "OpenThunder: Create Definition of Done"
+      },
+      {
+        "command": "openthunderCore.copyPrSummary",
+        "title": "OpenThunder: Copy Definition of Done for the Pull Request"
+      },
+      {
+        "command": "openthunderCore.copyForAssistant",
+        "title": "OpenThunder: Copy Open Items for Your AI Assistant"
+      },
+      {
+        "command": "openthunderCore.checkApi",
+        "title": "OpenThunder: Check API Compatibility"
+      }
+    ],
+    "configuration": {
+      "title": "OpenThunder",
+      "properties": {
+        "openthunderCore.baseBranch": {
+          "type": "string",
+          "default": "",
+          "description": "The branch your change will merge into. Its copy of the policy judges the change. Empty = origin's default branch, then main."
+        },
+        "openthunderCore.policyPath": {
+          "type": "string",
+          "default": ".openthunder/done-core.yml",
+          "description": "Where the Definition of Done policy lives (read from the base branch)."
+        },
+        "openthunderCore.reports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "junit.xml",
+            "**/junit*.xml",
+            "**/TEST-*.xml",
+            "coverage/lcov.info",
+            "**/lcov.info",
+            "**/*.sarif"
+          ],
+          "description": "Where to look for test (JUnit), coverage (lcov), and scanner (SARIF) reports."
+        },
+        "openthunderCore.openApiFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "openapi.json",
+            "openapi.yaml",
+            "openapi.yml",
+            "**/openapi.{json,yaml,yml}"
+          ],
+          "description": "API descriptions to compare with the base branch on save."
+        }
+      }
+    },
+    "languageModelTools": [
+      {
+        "name": "openthunder_definition_of_done",
+        "toolReferenceName": "definitionOfDone",
+        "displayName": "Definition of Done",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(checklist)",
+        "userDescription": "Check whether the current change meets the team's Definition of Done, with the evidence behind each answer.",
+        "modelDescription": "Deterministically checks the current git change in the open workspace against the team's Definition of Done policy (.openthunder/done-core.yml on the base branch), using the test, coverage, scanner, and API-compatibility evidence found in the workspace. Returns Done, Done with exceptions, or Not done, and for each requirement its status (Passed, Failed, Not checked, Outdated, Not applicable, Exception approved), the evidence, and the next step. Use it before saying a change is finished or ready for review, and to find what is still missing. It does not run tests or project code.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --target=node18 --format=cjs --external:vscode --outfile=dist/extension.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^2.32.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.2.2",
+    "openthunder-core": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SkillsTechTalk/openthunder-core.git",
+    "directory": "packages/vscode"
+  },
+  "homepage": "https://github.com/SkillsTechTalk/openthunder-core"
+}

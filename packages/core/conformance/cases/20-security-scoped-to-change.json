@@ -1,0 +1,40 @@
+{
+  "name": "An error-level finding on an unchanged file does not fail the change; one on a changed file does",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - security\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "security",
+      "check": "sarif",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "measured",
+      "metrics": {
+        "errors": 1
+      },
+      "identity": "local",
+      "findings": [
+        {
+          "message": "old issue",
+          "file": "src/legacy.ts",
+          "line": 3,
+          "severity": "error"
+        }
+      ]
+    }
+  ],
+  "expect": {
+    "state": "done",
+    "items": {
+      "security": "passed"
+    }
+  }
+}

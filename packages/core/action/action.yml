@@ -1,0 +1,67 @@
+# OpenThunder Definition of Done: GitHub Action (docs/BOUNDARY.md, Layer 2; private candidate until publication).
+# Collects the reports your workflow already produces, signs them when you give it a key, evaluates the change against
+# the Definition of Done on the base branch, and writes the result to the run summary. No network call, no account.
+name: OpenThunder Definition of Done
+description: Check a pull request against your team's Definition of Done, using the test, coverage, scanner, and API evidence your workflow already produces.
+branding: { icon: check-square, color: yellow }
+inputs:
+  base:
+    description: The branch the change merges into (default origin/<pull request base>). The checkout needs fetch-depth 0.
+    required: false
+  junit:
+    description: Comma-separated JUnit XML report paths.
+    required: false
+  lcov:
+    description: Comma-separated lcov coverage report paths.
+    required: false
+  sarif:
+    description: Comma-separated SARIF scanner report paths.
+    required: false
+  openapi:
+    description: Comma-separated OpenAPI files to compare with the base branch.
+    required: false
+  mode:
+    description: report (never fails the job) or enforce (fails the job when the change is Not done).
+    required: false
+    default: report
+  policy-path:
+    description: Where the policy lives on the base branch.
+    required: false
+    default: .openthunder/done-core.yml
+  signing-key:
+    description: Ed25519 private key (PEM) from a repository secret. With it, receipts count as trusted CI evidence.
+    required: false
+  key-id:
+    description: The key id the policy lists under "keys".
+    required: false
+    default: ci
+outputs:
+  state:
+    description: done, done-with-exceptions, or not-done.
+    value: ${{ steps.done.outputs.state }}
+  open:
+    description: How many required items are still open.
+    value: ${{ steps.done.outputs.open }}
+runs:
+  using: composite
+  steps:
+    - id: done
+      shell: bash
+      env:
+        DONE_CORE_SIGNING_KEY: ${{ inputs.signing-key }}
+        DONE_CORE_KEY_ID: ${{ inputs.signing-key != '' && inputs.key-id || '' }}
+        IN_BASE: ${{ inputs.base }}
+        IN_JUNIT: ${{ inputs.junit }}
+        IN_LCOV: ${{ inputs.lcov }}
+        IN_SARIF: ${{ inputs.sarif }}
+        IN_OPENAPI: ${{ inputs.openapi }}
+        IN_MODE: ${{ inputs.mode }}
+        IN_POLICY: ${{ inputs.policy-path }}
+      run: |
+        args=(ci --mode "$IN_MODE" --policy-path "$IN_POLICY")
+        [ -n "$IN_BASE" ] && args+=(--base "$IN_BASE")
+        [ -n "$IN_JUNIT" ] && args+=(--junit "$IN_JUNIT")
+        [ -n "$IN_LCOV" ] && args+=(--lcov "$IN_LCOV")
+        [ -n "$IN_SARIF" ] && args+=(--sarif "$IN_SARIF")
+        [ -n "$IN_OPENAPI" ] && args+=(--openapi "$IN_OPENAPI")
+        node "${{ github.action_path }}/../dist/cli.js" "${args[@]}"

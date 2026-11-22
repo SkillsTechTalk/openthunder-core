@@ -1,0 +1,21 @@
+{
+  "name": "An exception naming someone who is not an approver is not valid",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - tests\nexceptions:\n  - { requirement: tests, reason: r, approver: Sam, expires: 2026-12-31 }\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "tests": "not-checked"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "openthunder-core-repo",
+  "private": true,
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/core",
+    "packages/vscode"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/core && npm run build -w packages/vscode",
+    "test": "npm test -w packages/core && npm test -w packages/vscode"
+  }
+}

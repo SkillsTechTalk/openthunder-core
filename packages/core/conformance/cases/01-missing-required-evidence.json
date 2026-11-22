@@ -1,0 +1,22 @@
+{
+  "name": "Missing required evidence keeps the change Not done; it is Not checked, never Failed",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - tests\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "tests": "not-checked",
+      "policy-intact": "passed"
+    }
+  }
+}

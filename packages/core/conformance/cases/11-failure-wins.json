@@ -1,0 +1,48 @@
+{
+  "name": "One failing run of the same requirement fails it, even next to a passing run",
+  "policy": "version: 1\ntrust: ci\nkeys:\n  - id: ci\n    public-key: |\n{{key:ci}}\n    identities: [\"github-actions:acme/app\"]\napprovers: [\"Jordan\"]\nrequire:\n  - tests\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "tests",
+      "check": "junit",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "passed",
+      "metrics": {
+        "tests": 3,
+        "executed": 3,
+        "failures": 0
+      },
+      "identity": "github-actions:acme/app",
+      "sign": "ci"
+    },
+    {
+      "kind": "tests",
+      "check": "junit",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "metrics": {
+        "tests": 3,
+        "executed": 3,
+        "failures": 1
+      },
+      "identity": "github-actions:acme/app",
+      "sign": "ci"
+    }
+  ],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "tests": "failed"
+    }
+  }
+}

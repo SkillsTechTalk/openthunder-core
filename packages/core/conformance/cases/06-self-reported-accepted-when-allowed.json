@@ -1,0 +1,34 @@
+{
+  "name": "Where the policy accepts self-reported evidence, it counts and is labeled",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - tests\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "tests",
+      "check": "junit",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "passed",
+      "metrics": {
+        "tests": 3,
+        "executed": 3,
+        "failures": 0
+      },
+      "identity": "local"
+    }
+  ],
+  "expect": {
+    "state": "done",
+    "items": {
+      "tests": "passed"
+    }
+  }
+}

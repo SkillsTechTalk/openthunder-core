@@ -1,0 +1,17 @@
+# Example: .github/workflows/definition-of-done.yml
+name: Definition of Done
+on: pull_request
+jobs:
+  done:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }          # the policy is read from the base branch
+      - run: npm ci && npx vitest run --reporter=junit --outputFile=junit.xml --coverage
+      - uses: openthunder/core/action@v0   # placeholder: published with OpenThunder Core
+        with:
+          junit: junit.xml
+          lcov: coverage/lcov.info
+          openapi: openapi.yaml
+          mode: report                      # switch to enforce once the team trusts it
+          signing-key: ${{ secrets.DONE_CORE_SIGNING_KEY }}   # optional; makes the receipts trusted CI evidence

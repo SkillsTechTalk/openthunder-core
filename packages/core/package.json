@@ -1,0 +1,31 @@
+{
+  "name": "openthunder-core",
+  "version": "0.1.0",
+  "description": "OpenThunder Core: decide whether a change meets your Definition of Done from evidence (JUnit, lcov, SARIF, OpenAPI), with trusted CI receipts and honest exceptions. No account, no AI key, no network.",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "done-core": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.19",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SkillsTechTalk/openthunder-core.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/SkillsTechTalk/openthunder-core"
+}

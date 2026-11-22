@@ -1,0 +1,36 @@
+{
+  "name": "A failing custom check carries its own next step and the policy's title",
+  "policy": "version: 1\nrequire:\n  - check: { id: perf-budget, title: \"p95 latency stays under 200 ms\" }\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "docs/readme.md"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "check",
+      "check": "perf-budget",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "failed",
+      "summary": "p95 is 310 ms.",
+      "remedy": "Profile the checkout query.",
+      "identity": "local"
+    }
+  ],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "check:perf-budget": "failed"
+    },
+    "title": {
+      "check:perf-budget": "p95 latency stays under 200 ms"
+    },
+    "next": {
+      "check:perf-budget": "Profile the checkout query."
+    }
+  }
+}

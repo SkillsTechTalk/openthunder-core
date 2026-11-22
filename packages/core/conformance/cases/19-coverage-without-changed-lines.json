@@ -1,0 +1,32 @@
+{
+  "name": "A coverage receipt with no changed-line measurement cannot meet a changed-line requirement",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - coverage: { min: 80, of: changed }\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [
+    {
+      "kind": "coverage",
+      "check": "lcov",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outcome": "measured",
+      "metrics": {
+        "coveragePercent": 95
+      },
+      "identity": "local"
+    }
+  ],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "coverage": "not-checked"
+    }
+  }
+}

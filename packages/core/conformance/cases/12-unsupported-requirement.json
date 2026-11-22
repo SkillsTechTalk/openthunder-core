@@ -1,0 +1,21 @@
+{
+  "name": "A required requirement this evaluator cannot check stays open",
+  "policy": "version: 1\ntrust: any\napprovers: [\"Jordan\"]\nrequire:\n  - load-test-p95\n",
+  "policyEditedByChange": false,
+  "subject": {
+    "repository": "example.com/acme/app",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "changedFiles": [
+      "src/cart.ts",
+      "src/cart.test.ts"
+    ]
+  },
+  "now": "2026-11-20T12:00:00Z",
+  "receipts": [],
+  "expect": {
+    "state": "not-done",
+    "items": {
+      "load-test-p95": "not-checked"
+    }
+  }
+}
