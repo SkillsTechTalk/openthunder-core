@@ -43,5 +43,5 @@ body:
     id: setup
     attributes:
       label: Your setup
-      description: Language and test runner, reports used (JUnit, lcov, SARIF, OpenAPI), and the Core commit you pinned.
-      placeholder: "TypeScript, Vitest, JUnit + lcov, core @ 1a2b3c4"
+      description: Language and test runner, reports used (JUnit, lcov, SARIF, OpenAPI), and the Core version you used.
+      placeholder: "TypeScript, Vitest, JUnit + lcov, core v0.1.0"

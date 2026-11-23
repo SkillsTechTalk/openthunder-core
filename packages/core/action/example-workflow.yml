@@ -8,8 +8,8 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }          # the policy is read from the base branch
       - run: npm ci && npx vitest run --reporter=junit --outputFile=junit.xml --coverage --coverage.reporter=lcov
-      # Pin to a commit of https://github.com/SkillsTechTalk/openthunder-core (there are no release tags yet).
-      - uses: SkillsTechTalk/openthunder-core/packages/core/action@<commit-sha>
+      # A release tag (or a full commit SHA, if your organization requires pinning to one).
+      - uses: SkillsTechTalk/openthunder-core/packages/core/action@v0.1.0
         with:
           junit: junit.xml
           lcov: coverage/lcov.info

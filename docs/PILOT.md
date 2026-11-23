@@ -46,15 +46,15 @@ jobs:
         with: { node-version: 20 }
       # Your tests, writing a JUnit report (and lcov, if you want coverage). Examples below.
       - run: npm ci && npx vitest run --reporter=junit --outputFile=junit.xml --coverage --coverage.reporter=lcov
-      # Pin to a commit of this repository (there are no release tags yet).
-      - uses: SkillsTechTalk/openthunder-core/packages/core/action@<commit-sha>
+      # A release tag (or a full commit SHA, if your organization requires pinning to one).
+      - uses: SkillsTechTalk/openthunder-core/packages/core/action@v0.1.0
         with:
           junit: junit.xml
           lcov: coverage/lcov.info
           mode: report                    # never fails the job; switch to enforce once you trust it
 ```
 
-The first run builds Core from the pinned commit (a few seconds, locked npm dependencies only).
+The first run builds Core from that release (a few seconds, locked npm dependencies only).
 
 Producing the reports with other test runners:
 
