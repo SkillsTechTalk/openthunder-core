@@ -61,6 +61,12 @@ This repository is Apache 2.0: use it, change it, ship it, including commerciall
 plugins that write evidence this core reads. Team and Enterprise features are a paid service.
 See [docs/BOUNDARY.md](docs/BOUNDARY.md).
 
+## Learn Thunder, free
+
+OpenThunder shows code in **Thunder**, a readable form of what software does: its actions, its rules, and where it
+stops. Learn to read it, free and interactively, on Skills Tech Talk:
+**[app.skillstechtalk.com/learn/technology/t/thunderlang](https://app.skillstechtalk.com/learn/technology/t/thunderlang)**.
+
 ## Contributing
 
 Contributions are welcome under the Developer Certificate of Origin: sign off each commit (`git commit -s`).
